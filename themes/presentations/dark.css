@@ -1,0 +1,325 @@
+/* Dark Presentation Template */
+/* Dark theme for presentations with high contrast */
+
+:root {
+    --primary-color: #ffffff;
+    --secondary-color: #e8e8e8;
+    --accent-color: #64b5f6;
+    --text-color: #ffffff;
+    --bg-color: #0f1419;
+    --slide-bg: #1a1d24;
+    --border-color: #525252;
+    --highlight-color: #2a2d33;
+    --code-bg: #282c34;
+    --presentation-bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f1419 100%);
+    --presentation-slide-width: 864px;
+    --presentation-slide-height: 486px;
+}
+
+/* Slide container and content */
+.slide {
+    background: var(--slide-bg) !important;
+    color: var(--text-color) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: var(--presentation-slide-width) !important;
+    min-height: var(--presentation-slide-height) !important;
+    height: auto !important;
+    max-width: var(--presentation-slide-width) !important;
+    box-sizing: border-box;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 48px 56px;
+    margin: 20px;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+}
+
+.slide-content {
+    background: transparent !important;
+    color: var(--text-color) !important;
+    font-family: inherit !important;
+    line-height: inherit !important;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Force styles on React component slides */
+#presentation-root .absolute.slide,
+#presentation-root div.absolute.slide,
+.absolute.slide,
+div.absolute.slide {
+    background: var(--slide-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+    width: var(--presentation-slide-width) !important;
+    min-height: var(--presentation-slide-height) !important;
+    height: auto !important;
+    max-width: var(--presentation-slide-width) !important;
+    box-sizing: border-box;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 48px 56px !important;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Ensure parent containers also get dark background */
+#presentation-content,
+#presentation-root,
+#presentation-content .bg-white,
+#presentation-root .bg-white {
+    background: var(--bg-color) !important;
+}
+
+/* Typography */
+.slide h1, .slide-content h1 {
+    color: #ffffff !important;
+    font-size: 2.8em;
+    font-weight: 700;
+    margin-bottom: 1.2em;
+    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.7);
+    letter-spacing: -0.02em;
+}
+
+.slide h2, .slide-content h2 {
+    color: var(--accent-color) !important;
+    font-size: 2.2em;
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 0.3em;
+    text-shadow: 0 2px 4px rgba(100, 181, 246, 0.3);
+}
+
+.slide h3, .slide-content h3 {
+    color: var(--secondary-color) !important;
+    font-size: 1.7em;
+    font-weight: 500;
+    margin-top: 1.3em;
+    margin-bottom: 0.8em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.slide p, .slide-content p {
+    color: var(--text-color) !important;
+    font-size: 1.25em;
+    margin-bottom: 1.2em;
+    line-height: 1.7;
+}
+
+/* Lists */
+.slide ul, .slide ol, .slide-content ul, .slide-content ol {
+    font-size: 1.15em;
+    margin: 1.2em 0;
+    padding-left: 2em;
+}
+
+/* Nested lists should be smaller than parent lists */
+.slide ul ul, .slide ol ol, .slide ul ol, .slide ol ul,
+.slide-content ul ul, .slide-content ol ol, .slide-content ul ol, .slide-content ol ul {
+    font-size: 0.95em;
+    margin: 0.8em 0;
+    margin-top: 2px;
+}
+
+/* Third level nested lists should be even smaller */
+.slide ul ul ul, .slide ol ol ol, .slide ul ol ul, .slide ol ul ol,
+.slide ul ul ol, .slide ol ol ul, .slide ol ul ul, .slide ul ol ol,
+.slide-content ul ul ul, .slide-content ol ol ol, .slide-content ul ol ul, .slide-content ol ul ol,
+.slide-content ul ul ol, .slide-content ol ol ul, .slide-content ol ul ul, .slide-content ul ol ol {
+    font-size: 0.85em;
+    margin: 0.6em 0;
+}
+
+.slide li, .slide-content li {
+    color: var(--text-color) !important;
+    margin-bottom: 0.7em;
+    line-height: 1.6;
+}
+
+.slide ul li::marker, .slide-content ul li::marker {
+    color: var(--accent-color);
+}
+
+/* Blockquotes */
+.slide blockquote, .slide-content blockquote {
+    border-left: 4px solid var(--accent-color);
+    margin: 1.8em 0;
+    padding: 1.2em 1.8em;
+    background: var(--highlight-color);
+    font-style: italic;
+    font-size: 1.2em;
+    color: var(--secondary-color);
+    border-radius: 0 8px 8px 0;
+}
+
+.slide blockquote, .slide-content blockquote::before {
+    content: '"';
+    font-size: 2.5em;
+    color: var(--accent-color);
+    font-weight: bold;
+    opacity: 0.7;
+}
+
+/* Code blocks */
+.slide code, .slide-content code {
+    background: var(--code-bg);
+    color: #58a6ff;
+    padding: 0.3em 0.6em;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', 'Fira Code', monospace;
+    font-size: 0.9em;
+    border: 1px solid var(--border-color);
+}
+
+.slide pre, .slide-content pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5em;
+    overflow-x: auto;
+    font-size: 0.95em;
+    color: #c9d1d9;
+}
+
+.slide pre, .slide-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+}
+
+/* Tables */
+.slide table, .slide-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+    font-size: 1em;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.slide th, .slide-content th, .slide td, .slide-content th, .slide-content td {
+    border: 1px solid var(--border-color);
+    padding: 1em;
+    text-align: left;
+}
+
+.slide th, .slide-content th {
+    background: var(--highlight-color);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.slide tr, .slide-content tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Emphasis */
+.slide strong, .slide-content strong {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.slide em, .slide-content em {
+    color: var(--accent-color);
+    font-style: italic;
+}
+
+/* Links */
+.slide a, .slide-content a {
+    color: var(--accent-color);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.slide a, .slide-content a:hover {
+    border-bottom-color: var(--accent-color);
+    text-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
+}
+
+/* Math equations */
+.slide .math, .slide-content .math {
+    font-size: 1.15em;
+    color: var(--primary-color);
+}
+
+/* Images */
+.slide img, .slide-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+}
+
+/* Automatic height extension for slides with images */
+.slide:has(img),
+.slide-content:has(img),
+#presentation-root .absolute.slide:has(img),
+#presentation-root div.absolute.slide:has(img),
+.absolute.slide:has(img),
+div.absolute.slide:has(img) {
+    min-height: var(--presentation-slide-height) !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+/* Ensure slide containers can expand */
+.slide:has(img) .slide-content,
+.slide-content:has(img) {
+    height: auto !important;
+    overflow: visible !important;
+}
+
+/* Speaker notes styling */
+.speaker-notes {
+    background: var(--highlight-color);
+    border-left: 4px solid #ff6b6b;
+    border-radius: 0 8px 8px 0;
+    padding: 1.2em;
+    margin: 1.5em 0;
+    font-size: 0.95em;
+    color: var(--secondary-color);
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Slide number indicator */
+.slide::after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-color), #42a5f5);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(100, 181, 246, 0.3);
+}
+
+/* Force all text elements to be visible on dark background */
+.slide *, .slide-content *,
+.slide span, .slide-content span,
+.slide div, .slide-content div,
+.slide td, .slide-content td,
+.slide th, .slide-content th,
+.slide text, .slide-content text,
+.slide p, .slide-content p,
+.slide li, .slide-content li {
+    color: var(--text-color) !important;
+}
+
+/* Override any inherited dark colors */
+.slide {
+    color: var(--text-color) !important;
+}
+
+.slide-content {
+    color: var(--text-color) !important;
+}

@@ -1,0 +1,299 @@
+/* Academic Presentation Template */
+/* Elegant, sophisticated styling for academic presentations */
+
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #34495e;
+    --accent-color: #c0392b;
+    --text-color: #2c3e50;
+    --bg-color: #f5f2e8;
+    --slide-bg: #f5f2e8;
+    --border-color: #d4b886;
+    --highlight-color: #e74c3c;
+    --quote-bg: #f0ede3;
+    --presentation-bg-gradient: linear-gradient(135deg, #f4f1e8 0%, #e8dcc6 50%, #d4c4a0 100%);
+    --presentation-slide-width: 864px;
+    --presentation-slide-height: 486px;
+}
+
+/* Slide container */
+.slide {
+    background: var(--slide-bg) !important;
+    color: var(--text-color) !important;
+    font-family: 'Georgia', 'Garamond', 'Times New Roman', serif;
+    line-height: 1.6;
+    width: var(--presentation-slide-width) !important;
+    min-height: var(--presentation-slide-height) !important;
+    height: auto !important;
+    max-width: var(--presentation-slide-width) !important;
+    box-sizing: border-box;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 60px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin: 20px;
+    border-radius: 12px;
+}
+
+.slide-content {
+    background: transparent !important;
+    color: var(--text-color) !important;
+    font-family: inherit !important;
+    line-height: inherit !important;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Force styles on React component slides */
+#presentation-root .absolute.slide,
+#presentation-root div.absolute.slide,
+.absolute.slide,
+div.absolute.slide {
+    background: var(--slide-bg) !important;
+    color: var(--text-color) !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    width: var(--presentation-slide-width) !important;
+    min-height: var(--presentation-slide-height) !important;
+    height: auto !important;
+    max-width: var(--presentation-slide-width) !important;
+    box-sizing: border-box;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 60px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Ensure parent containers get the elegant background */
+#presentation-content,
+#presentation-root,
+#presentation-content .bg-white,
+#presentation-root .bg-white {
+    background: var(--bg-color) !important;
+}
+
+/* Add subtle texture/gradient for elegance */
+.slide::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(52, 73, 94, 0.02) 100%);
+    pointer-events: none;
+}
+
+/* Typography */
+.slide h1, .slide-content h1 {
+    color: var(--primary-color) !important;
+    font-size: 2.8em;
+    font-weight: 700;
+    border-bottom: 3px double var(--accent-color);
+    padding-bottom: 0.5em;
+    margin-bottom: 1em;
+    letter-spacing: -0.02em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.slide h2, .slide-content h2 {
+    color: var(--primary-color) !important;
+    font-size: 2em;
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    border-left: 5px solid var(--accent-color);
+    padding-left: 15px;
+    background: linear-gradient(to right, rgba(139, 115, 85, 0.05), transparent);
+}
+
+.slide h3, .slide-content h3 {
+    color: var(--secondary-color) !important;
+    font-size: 1.5em;
+    font-weight: 500;
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+    font-style: italic;
+}
+
+.slide p {
+    font-size: 1.2em;
+    margin-bottom: 1em;
+    text-align: justify;
+}
+
+/* Lists */
+.slide ul, .slide ol {
+    font-size: 1.1em;
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+/* Nested lists should be smaller than parent lists */
+.slide ul ul, .slide ol ol, .slide ul ol, .slide ol ul {
+    font-size: 0.9em;
+    margin: 0.7em 0;
+    margin-top: 2px;
+}
+
+/* Third level nested lists should be even smaller */
+.slide ul ul ul, .slide ol ol ol, .slide ul ol ul, .slide ol ul ol,
+.slide ul ul ol, .slide ol ol ul, .slide ol ul ul, .slide ul ol ol {
+    font-size: 0.8em;
+    margin: 0.5em 0;
+}
+
+.slide li {
+    margin-bottom: 0.5em;
+    line-height: 1.5;
+}
+
+/* Blockquotes */
+.slide blockquote, .slide-content blockquote {
+    border-left: 5px solid var(--accent-color);
+    margin: 1.5em 0;
+    padding: 1.2em 1.8em;
+    background: var(--quote-bg);
+    font-style: italic;
+    font-size: 1.15em;
+    color: #4a4a4a;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+.slide blockquote::before, .slide-content blockquote::before {
+    content: '"';
+    font-size: 3em;
+    color: var(--accent-color);
+    font-weight: bold;
+    position: absolute;
+    left: 10px;
+    top: -10px;
+    font-family: Georgia, serif;
+    opacity: 0.4;
+}
+
+/* Code blocks */
+.slide code {
+    background: #f4f4f4;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.9em;
+}
+
+.slide pre {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 1em;
+    overflow-x: auto;
+    font-size: 0.9em;
+}
+
+/* Tables */
+.slide table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    font-size: 1em;
+}
+
+.slide th, .slide td {
+    border: 1px solid var(--border-color);
+    padding: 0.8em;
+    text-align: left;
+}
+
+.slide th {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.slide tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+/* Emphasis */
+.slide strong {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.slide em {
+    color: var(--secondary-color);
+    font-style: italic;
+}
+
+/* Links */
+.slide a {
+    color: var(--secondary-color);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s;
+}
+
+.slide a:hover {
+    border-bottom-color: var(--secondary-color);
+}
+
+/* Footer/Page numbers */
+.slide::after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    width: 50px;
+    height: 3px;
+    background: var(--secondary-color);
+}
+
+/* Math equations */
+.slide .math {
+    font-size: 1.1em;
+    color: var(--primary-color);
+}
+
+/* Images */
+.slide img, .slide-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+}
+
+/* Automatic height extension for slides with images */
+.slide:has(img),
+.slide-content:has(img),
+#presentation-root .absolute.slide:has(img),
+#presentation-root div.absolute.slide:has(img),
+.absolute.slide:has(img),
+div.absolute.slide:has(img) {
+    min-height: var(--presentation-slide-height) !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+/* Ensure slide containers can expand */
+.slide:has(img) .slide-content,
+.slide-content:has(img) {
+    height: auto !important;
+    overflow: visible !important;
+}
+
+/* Speaker notes styling */
+.speaker-notes {
+    background: #f8f9fa;
+    border-left: 4px solid var(--highlight-color);
+    padding: 1em;
+    margin: 1em 0;
+    font-size: 0.9em;
+    color: #666;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}

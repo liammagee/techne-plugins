@@ -15,6 +15,14 @@ techne-plugins/
 │   ├── techne-network-diagram/    # Network/graph visualization
 │   ├── techne-circle/             # Hermeneutic circle visualization
 │   └── techne-maze/               # Babel maze navigation
+├── themes/
+│   └── presentations/             # Presentation theme stylesheets
+│       ├── default.css
+│       ├── academic.css
+│       ├── dark.css
+│       ├── minimal.css
+│       ├── techne-red.css
+│       └── techne-orange.css
 └── README.md
 ```
 
@@ -109,6 +117,29 @@ Plus any capabilities added via `extendHost()`.
 })();
 ```
 
+## Presentation Themes
+
+The `themes/presentations/` directory contains CSS themes for the presentations plugin:
+
+| Theme | Description |
+|-------|-------------|
+| `default.css` | Full-featured default theme with all styling options |
+| `academic.css` | Clean, professional theme for academic presentations |
+| `dark.css` | Dark mode theme with high contrast |
+| `minimal.css` | Stripped-down minimal styling |
+| `techne-red.css` | Techne brand theme with red accents |
+| `techne-orange.css` | Techne brand theme with orange accents |
+
+To use a theme, load it before starting a presentation:
+
+```javascript
+// Load theme dynamically
+const link = document.createElement('link');
+link.rel = 'stylesheet';
+link.href = 'styles/templates/presentations/dark.css';
+document.head.appendChild(link);
+```
+
 ## Integration
 
 ### Git Submodule
@@ -128,6 +159,9 @@ rsync -av --delete \
 rsync -av --delete \
     /path/to/techne-plugins/plugins/ \
     /path/to/your-app/plugins/
+rsync -av --delete \
+    /path/to/techne-plugins/themes/ \
+    /path/to/your-app/styles/templates/
 ```
 
 ## License
