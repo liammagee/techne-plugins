@@ -1,0 +1,22 @@
+{
+  "name": "techne-plugins",
+  "version": "0.1.0",
+  "description": "A lightweight plugin system and collection of UI plugins for web applications",
+  "main": "core/techne-plugin-system.js",
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "plugins",
+    "ui",
+    "presentations",
+    "markdown",
+    "visualization"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}
