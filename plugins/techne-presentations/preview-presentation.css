@@ -553,6 +553,7 @@ body.is-presenting ol ol ol,
     }
 
     /* Hide all slides except the current one */
+    /* Non-current slides have opacity: 0.1 and z-index: 0 set by React */
     body.is-presenting #presentation-root .slide {
         display: none !important;
         position: fixed !important;
@@ -563,15 +564,25 @@ body.is-presenting ol ol ol,
         z-index: 10 !important;
     }
 
-    /* Show only the current/active slide */
-    body.is-presenting #presentation-root .slide[data-current="true"],
-    body.is-presenting #presentation-root .slide.ring-4,
+    /* Show only the current/active slide - match React's inline styles */
+    /* Current slide gets: ring-4, ring-green-500, z-index: 999, opacity: 1 */
+    body.is-presenting #presentation-root .slide.ring-green-500,
+    body.is-presenting #presentation-root .slide.ring-purple-500,
     body.is-presenting #presentation-root .slide[style*="z-index: 999"],
-    body.is-presenting #presentation-root .slide[style*="opacity: 1"] {
+    body.is-presenting #presentation-root .slide[style*="zIndex: 999"] {
         display: flex !important;
         flex-direction: column !important;
         justify-content: flex-start !important;
         align-items: center !important;
+        opacity: 1 !important;
+    }
+
+    /* Ensure non-current slides stay hidden even if they have some opacity */
+    body.is-presenting #presentation-root .slide[style*="opacity: 0.1"],
+    body.is-presenting #presentation-root .slide[style*="z-index: 0"],
+    body.is-presenting #presentation-root .slide[style*="zIndex: 0"] {
+        display: none !important;
+        opacity: 0 !important;
     }
 
     /* ========== SINGLE SLIDE STYLING ========== */

@@ -280,12 +280,52 @@
     document.body.classList.remove('speaker-notes-visible');
   }
 
+  // Force hide speaker notes on mobile when entering presentation mode
+  function setupMobilePresentation() {
+    if (!isMobile()) return;
+
+    const notesPanel = document.getElementById('speaker-notes-panel');
+    if (notesPanel) {
+      // Remove any inline display style and hide via CSS
+      notesPanel.style.removeProperty('display');
+      notesPanel.classList.remove('mobile-visible');
+      // Force hide with inline style as fallback
+      notesPanel.style.setProperty('display', 'none', 'important');
+    }
+    document.body.classList.remove('speaker-notes-visible');
+
+    // Monitor and hide any panels that React might show
+    if (window.mobileNotesPanelMonitor) {
+      clearInterval(window.mobileNotesPanelMonitor);
+    }
+    window.mobileNotesPanelMonitor = setInterval(() => {
+      if (!isPresenting()) {
+        clearInterval(window.mobileNotesPanelMonitor);
+        return;
+      }
+      const panel = document.getElementById('speaker-notes-panel');
+      if (panel && !panel.classList.contains('mobile-visible')) {
+        const computedStyle = window.getComputedStyle(panel);
+        if (computedStyle.display !== 'none') {
+          panel.style.setProperty('display', 'none', 'important');
+        }
+      }
+    }, 100);
+  }
+
   // Watch for presentation mode changes
   const bodyObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.attributeName === 'class') {
-        if (!document.body.classList.contains('is-presenting')) {
+        if (document.body.classList.contains('is-presenting')) {
+          // Entering presentation mode on mobile - hide speaker notes
+          setupMobilePresentation();
+        } else {
+          // Exiting presentation mode
           cleanupMobilePresentation();
+          if (window.mobileNotesPanelMonitor) {
+            clearInterval(window.mobileNotesPanelMonitor);
+          }
         }
       }
     });
