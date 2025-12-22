@@ -204,13 +204,76 @@
     }
 
     .plugin-view-content {
-      padding: 1rem;
-      min-height: 350px;
+      padding: 0;
+      min-height: 500px;
+      height: 60vh;
+      background: #f8f9fa;
+      border-radius: 0 0 12px 12px;
+      position: relative;
     }
 
     #plugin-container {
       width: 100%;
-      min-height: 300px;
+      height: 100%;
+      min-height: 500px;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* Tailwind utility classes for presentation plugin */
+    .h-screen { height: 100vh; }
+    .w-full { width: 100%; }
+    .absolute { position: absolute; }
+    .fixed { position: fixed; }
+    .relative { position: relative; }
+    .top-4 { top: 1rem; }
+    .bottom-4 { bottom: 1rem; }
+    .left-4 { left: 1rem; }
+    .right-4 { right: 1rem; }
+    .left-1\/2 { left: 50%; }
+    .z-10 { z-index: 10; }
+    .z-50 { z-index: 50; }
+    .flex { display: flex; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-4 { gap: 1rem; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .transform { transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+    .-translate-x-1\/2 { --tw-translate-x: -50%; transform: translateX(-50%); }
+    .p-2 { padding: 0.5rem; }
+    .p-3 { padding: 0.75rem; }
+    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .px-4 { padding-left: 1rem; padding-right: 1rem; }
+    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+    .transition-colors { transition-property: color, background-color, border-color; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+    .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+    .duration-500 { transition-duration: 500ms; }
+    .cursor-pointer { cursor: pointer; }
+    .cursor-grab { cursor: grab; }
+    .overflow-hidden { overflow: hidden; }
+    .pointer-events-none { pointer-events: none; }
+    .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .font-medium { font-weight: 500; }
+    .bg-cream { background-color: #fefdfb; }
+    .text-gray-900 { color: #111827; }
+    .border { border-width: 1px; }
+
+    /* Backdrop container - positioned behind plugin content */
+    #techne-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
     }
 
     .logs {
@@ -251,7 +314,7 @@
       align-items: center;
       justify-content: center;
       height: 300px;
-      color: var(--text-muted);
+      color: #555;
     }
 
     .empty-state svg {
@@ -259,6 +322,7 @@
       height: 64px;
       margin-bottom: 1rem;
       opacity: 0.5;
+      color: #555;
     }
 
     .test-controls {
@@ -361,6 +425,8 @@
           <span id="view-status" class="status-badge">Not Mounted</span>
         </div>
         <div class="plugin-view-content">
+          <!-- Backdrop target - shapes will render here instead of body -->
+          <div id="techne-background"></div>
           <div id="plugin-container">
             <div class="empty-state">
               <svg viewBox="0 0 24 24" fill="currentColor">
@@ -393,6 +459,12 @@
       </div>
     </div>
   </main>
+
+  <!-- External dependencies required by plugins -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 
   <!-- Load plugin system -->
   <script src="../../core/techne-plugin-system.js"></script>

@@ -32,9 +32,73 @@ function setStatus(text, state = 'ready') {
 async function init() {
   log('Initializing test app...');
 
+  // Provide mock global functions expected by plugins
+  window.getFilteredVisualizationFiles = async () => {
+    // Return empty file list for test environment
+    // Network diagram will use test data passed via mount() instead
+    return { files: [] };
+  };
+
+  // Test files for maze and circle plugins
+  const testFiles = [
+    {
+      path: '/test/entrance-hall.md',
+      relativePath: 'entrance-hall.md',
+      name: 'entrance-hall.md',
+      content: '# Entrance Hall\n\nYou stand in a grand entrance hall. Torches flicker on ancient walls.\n\n[[library|Go to the Library]]\n[[garden|Exit to the Garden]]'
+    },
+    {
+      path: '/test/library.md',
+      relativePath: 'library.md',
+      name: 'library.md',
+      content: '# The Library\n\nTowering shelves of ancient books surround you. Dust motes dance in shafts of light.\n\n[[entrance-hall|Return to Entrance]]\n[[archive|Descend to Archives]]\n[[reading-room|Enter Reading Room]]'
+    },
+    {
+      path: '/test/garden.md',
+      relativePath: 'garden.md',
+      name: 'garden.md',
+      content: '# The Garden\n\nA peaceful garden with overgrown paths and a trickling fountain.\n\n[[entrance-hall|Return Inside]]\n[[maze-garden|Enter the Hedge Maze]]'
+    },
+    {
+      path: '/test/archive.md',
+      relativePath: 'archive.md',
+      name: 'archive.md',
+      content: '# The Archives\n\nDusty scrolls and forgotten manuscripts line the walls.\n\n[[library|Climb back to Library]]\n[[vault|Open the Vault]]'
+    },
+    {
+      path: '/test/reading-room.md',
+      relativePath: 'reading-room.md',
+      name: 'reading-room.md',
+      content: '# Reading Room\n\nComfortable chairs and warm lamplight invite quiet study.\n\n[[library|Return to Library]]'
+    },
+    {
+      path: '/test/vault.md',
+      relativePath: 'vault.md',
+      name: 'vault.md',
+      content: '# The Vault\n\nAncient treasures and forbidden knowledge await.\n\n[[archive|Leave the Vault]]'
+    },
+    {
+      path: '/test/maze-garden.md',
+      relativePath: 'maze-garden.md',
+      name: 'maze-garden.md',
+      content: '# Hedge Maze\n\nTwisting paths of tall hedges confuse your sense of direction.\n\n[[garden|Exit to Garden]]\n[[secret-clearing|Find the Secret Clearing]]'
+    },
+    {
+      path: '/test/secret-clearing.md',
+      relativePath: 'secret-clearing.md',
+      name: 'secret-clearing.md',
+      content: '# Secret Clearing\n\nA hidden sanctuary at the heart of the maze. A stone altar stands here.\n\n[[maze-garden|Return to Maze]]'
+    }
+  ];
+
   // Extend host with test capabilities
   window.TechnePlugins.extendHost({
     readFile: async (filePath) => {
+      // First check test files
+      const testFile = testFiles.find(f => f.path === filePath || f.relativePath === filePath.replace(/^\/test\//, ''));
+      if (testFile) {
+        return { content: testFile.content };
+      }
       try {
         const res = await fetch(`/api/files/${encodeURIComponent(filePath)}`);
         if (!res.ok) return null;
@@ -45,15 +109,8 @@ async function init() {
       }
     },
     getFiles: async () => {
-      try {
-        const res = await fetch('/api/plugins');
-        if (!res.ok) return { files: [], totalFiles: 0 };
-        const plugins = await res.json();
-        return { files: plugins, totalFiles: plugins.length };
-      } catch (err) {
-        log(`Error getting files: ${err.message}`, 'error');
-        return { files: [], totalFiles: 0 };
-      }
+      // Return test files for maze and circle plugins
+      return { files: testFiles, totalFiles: testFiles.length };
     },
     openFile: async (filePath) => {
       log(`Open file requested: ${filePath}`);
@@ -116,14 +173,34 @@ function updatePluginList() {
   const manifest = window.TechnePlugins.getManifest();
   const enabled = new Set(window.TechnePlugins.getEnabled());
 
+  const typeIcons = {
+    'view': '🖼️',
+    'background': '🎨',
+    'utility': '🔧',
+    'overlay': '📋',
+    'unknown': '❓'
+  };
+
   list.innerHTML = manifest.map(plugin => {
     const isEnabled = enabled.has(plugin.id);
     const isActive = currentPlugin === plugin.id;
+    const modeId = plugin.id.replace('techne-', '');
+    // Check multiple mode ID patterns
+    const hasMode = !!(availableModes[modeId]
+      || availableModes[modeId.replace('-diagram', '')]
+      || availableModes[modeId + 's']);
+    const pluginInfo = getPluginType(plugin.id);
+    const icon = typeIcons[pluginInfo.type] || '❓';
+
     return `
       <li class="plugin-item ${isActive ? 'active' : ''} ${isEnabled ? '' : 'disabled'}"
-          onclick="selectPlugin('${plugin.id}')">
-        <div class="name">${plugin.id}</div>
-        <span class="status-badge ${isEnabled ? 'enabled' : ''}">${isEnabled ? 'Enabled' : 'Disabled'}</span>
+          onclick="selectPlugin('${plugin.id}')"
+          title="${pluginInfo.desc}">
+        <div class="name">${icon} ${plugin.id.replace('techne-', '')}</div>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          ${hasMode ? '<span style="font-size: 0.65rem; opacity: 0.7;">mountable</span>' : ''}
+          <span class="status-badge ${isEnabled ? 'enabled' : ''}">${isEnabled ? 'On' : 'Off'}</span>
+        </div>
       </li>
     `;
   }).join('');
@@ -165,6 +242,20 @@ async function toggleCurrentPlugin() {
   selectPlugin(currentPlugin);
 }
 
+// Get plugin type description
+function getPluginType(pluginId) {
+  const types = {
+    'techne-backdrop': { type: 'background', desc: 'Background visual layer - auto-applies when enabled' },
+    'techne-presentations': { type: 'view', desc: 'Presentation mode - renders markdown as slides' },
+    'techne-markdown-renderer': { type: 'utility', desc: 'Markdown rendering utilities - used by other plugins' },
+    'techne-network-diagram': { type: 'view', desc: 'Network graph visualization' },
+    'techne-circle': { type: 'view', desc: 'Hermeneutic circle visualization' },
+    'techne-maze': { type: 'view', desc: 'Babel maze - MUD-style exploration' },
+    'techne-ai-tutor': { type: 'overlay', desc: 'AI-guided tour system - click ? button to start' }
+  };
+  return types[pluginId] || { type: 'unknown', desc: 'Unknown plugin type' };
+}
+
 // Mount current plugin view
 async function mountCurrentPlugin() {
   if (!currentPlugin) return;
@@ -172,16 +263,42 @@ async function mountCurrentPlugin() {
   const container = document.getElementById('plugin-container');
   container.innerHTML = '<div style="text-align: center; padding: 2rem;">Loading...</div>';
 
-  // Find mode for this plugin
+  // Find mode for this plugin - try multiple ID patterns
   const modeId = currentPlugin.replace('techne-', '');
-  const mode = availableModes[modeId];
+  // Try the exact stripped ID first, then with common suffixes
+  const mode = availableModes[modeId]
+    || availableModes[modeId.replace('-diagram', '')]  // network-diagram -> network
+    || availableModes[modeId + 's'];  // presentation -> presentations
+
+  const pluginInfo = getPluginType(currentPlugin);
 
   if (!mode) {
-    log(`No mode found for ${currentPlugin}. Available modes: ${Object.keys(availableModes).join(', ')}`, 'warn');
+    log(`No mode found for ${currentPlugin}. Plugin type: ${pluginInfo.type}`, 'info');
+
+    // Show helpful info based on plugin type
+    let helpText = '';
+    switch (pluginInfo.type) {
+      case 'background':
+        helpText = 'This plugin applies background effects automatically when enabled. Check if backdrop elements appear on the page.';
+        break;
+      case 'utility':
+        helpText = 'This is a utility plugin that provides services to other plugins. It has no visual interface.';
+        break;
+      case 'overlay':
+        helpText = 'This plugin creates an overlay UI. Look for a ? button or trigger in the UI.';
+        break;
+      case 'view':
+        helpText = 'This plugin should have a view but mode was not registered. Check console for initialization errors.';
+        break;
+      default:
+        helpText = `Available modes: ${Object.keys(availableModes).join(', ') || 'none'}`;
+    }
+
     container.innerHTML = `
       <div class="empty-state">
-        <p>No mountable view found for this plugin.</p>
-        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Available modes: ${Object.keys(availableModes).join(', ') || 'none'}</p>
+        <p><strong>${pluginInfo.desc}</strong></p>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-muted);">${helpText}</p>
+        ${pluginInfo.type === 'background' ? '<p style="margin-top: 1rem; font-size: 0.8rem;">Look for visual changes in the page background!</p>' : ''}
       </div>
     `;
     return;

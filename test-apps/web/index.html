@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Techne Plugins Test App</title>
+  <!-- Tailwind CSS for presentation plugin -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
       --bg: #1a1a2e;
@@ -194,13 +196,33 @@
     }
 
     .plugin-view-content {
-      padding: 1rem;
-      min-height: 350px;
+      padding: 0;
+      min-height: 500px;
+      height: 60vh;
+      background: #f8f9fa;
+      border-radius: 0 0 12px 12px;
+      position: relative;
     }
 
     #plugin-container {
       width: 100%;
-      min-height: 300px;
+      height: 100%;
+      min-height: 500px;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* Backdrop container - positioned behind plugin content */
+    #techne-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
     }
 
     .logs {
@@ -241,7 +263,7 @@
       align-items: center;
       justify-content: center;
       height: 300px;
-      color: var(--text-muted);
+      color: #555;
     }
 
     .empty-state svg {
@@ -249,6 +271,7 @@
       height: 64px;
       margin-bottom: 1rem;
       opacity: 0.5;
+      color: #555;
     }
 
     .test-controls {
@@ -324,6 +347,8 @@
           <span id="view-status" class="status-badge">Not Mounted</span>
         </div>
         <div class="plugin-view-content">
+          <!-- Backdrop target - shapes will render here instead of body -->
+          <div id="techne-background"></div>
           <div id="plugin-container">
             <div class="empty-state">
               <svg viewBox="0 0 24 24" fill="currentColor">
@@ -356,6 +381,12 @@
       </div>
     </div>
   </main>
+
+  <!-- External dependencies required by plugins -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 
   <!-- Load plugin system -->
   <script src="/core/techne-plugin-system.js"></script>
