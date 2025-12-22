@@ -271,6 +271,8 @@ class TTSService {
     console.log('[TTS] Immediate force stop');
     console.log('[TTS] Active audio elements to clean:', this.activeAudioElements.size);
     this.isSpeaking = false;
+    // DON'T clear isLoading here - it's managed by speak() and the audio callbacks
+    // Clearing it here would cause race conditions when a new speak() call is waiting for mutex
     
     // Stop ALL tracked audio elements
     for (const audio of this.activeAudioElements) {
@@ -475,7 +477,8 @@ class TTSService {
       const abortListener = () => {
         console.log('[TTS-LEMONFOX] Speech aborted via signal');
         this.isSpeaking = false;
-        
+        this.isLoading = false;
+
         // Remove from active audio elements
         if (this.currentAudio) {
           this.activeAudioElements.delete(this.currentAudio);
@@ -483,27 +486,23 @@ class TTSService {
           this.currentAudio.src = '';
           this.currentAudio = null;
         }
-        
+
         if (audioUrl) {
           URL.revokeObjectURL(audioUrl);
         }
         resolve(); // Resolve, don't reject, for graceful cancellation
       };
-      
+
       if (signal.aborted) {
         console.log('[TTS-LEMONFOX] Signal already aborted, exiting');
         abortListener();
         return;
       }
-      
+
       signal.addEventListener('abort', abortListener);
-      
+
       try {
-        this.isSpeaking = true;
-        if (options.onStart) {
-          console.log('[TTS-LEMONFOX] Calling onStart callback');
-          options.onStart();
-        }
+        // Don't set isSpeaking=true yet - wait until audio actually starts
         
         console.log('[TTS-LEMONFOX] Preparing API request');
         
@@ -566,9 +565,10 @@ class TTSService {
             console.log('[TTS-LEMONFOX] Audio ended after intentional stop');
             return;
           }
-          
+
           console.log('[TTS-LEMONFOX] Audio playback ended normally');
           this.isSpeaking = false;
+          this.isLoading = false;
           
           // Store reference before cleanup
           const audioElement = this.currentAudio;
@@ -611,8 +611,9 @@ class TTSService {
             error: audioElement?.error,
             paused: audioElement?.paused
           });
-          
+
           this.isSpeaking = false;
+          this.isLoading = false;
           
           // Remove from active audio elements
           if (audioElement) {
@@ -675,7 +676,14 @@ class TTSService {
             
             try {
               await this.currentAudio.play();
-              console.log('[TTS-LEMONFOX] Audio playback started successfully');
+              // Now that audio is actually playing, set the flags
+              this.isSpeaking = true;
+              this.isLoading = false;
+              console.log('[TTS-LEMONFOX] Audio playback started successfully, isSpeaking=true, isLoading=false');
+              if (options.onStart) {
+                console.log('[TTS-LEMONFOX] Calling onStart callback');
+                options.onStart();
+              }
               resolvePlay();
             } catch (playError) {
               // Check if this was due to abort
@@ -698,6 +706,7 @@ class TTSService {
       } catch (error) {
         console.error('[TTS-LEMONFOX] Exception in speakWithLemonfoxImmediate:', error);
         this.isSpeaking = false;
+        this.isLoading = false;
         if (this.currentAudio) this.currentAudio = null;
         if (audioUrl) URL.revokeObjectURL(audioUrl);
         if (options.onError) {
@@ -716,6 +725,7 @@ class TTSService {
       const abortListener = () => {
         console.log('[TTS] Web Speech aborted');
         this.isSpeaking = false;
+        this.isLoading = false;
         if (window.speechSynthesis) {
           window.speechSynthesis.cancel();
         }
@@ -745,26 +755,29 @@ class TTSService {
         // Set up event handlers
         this.currentUtterance.onstart = () => {
           this.isSpeaking = true;
-          console.log('[TTS] Started speaking with Web Speech API');
+          this.isLoading = false;
+          console.log('[TTS] Started speaking with Web Speech API, isSpeaking=true, isLoading=false');
           if (options.onStart) options.onStart();
         };
-        
+
         this.currentUtterance.onend = () => {
           this.isSpeaking = false;
+          this.isLoading = false;
           this.currentUtterance = null;
           console.log('[TTS] Finished speaking with Web Speech API');
           if (options.onEnd) options.onEnd();
           signal.removeEventListener('abort', abortListener);
           resolve();
         };
-        
+
         this.currentUtterance.onerror = (event) => {
           this.isSpeaking = false;
+          this.isLoading = false;
           this.currentUtterance = null;
           console.error('[TTS] Web Speech API error:', event);
           if (options.onError) options.onError(event);
           signal.removeEventListener('abort', abortListener);
-          
+
           // Only reject if it's not an interruption error
           if (event.error !== 'interrupted') {
             reject(event);

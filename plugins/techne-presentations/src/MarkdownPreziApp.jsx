@@ -1822,17 +1822,20 @@ Note: You can press 'N' to toggle these speaker notes on/off during presentation
           const maxPollCount = 120; // 120 * 500ms = 60 seconds max
           const checkCompletion = () => {
             pollCount++;
-            console.log('[PRESENTATION-TTS] 🔍 Polling completion - count:', pollCount, 'isSpeaking:', window.ttsService.isSpeaking);
-            
-            if (!window.ttsService.isSpeaking || pollCount >= maxPollCount) {
+            const ttsIsSpeaking = window.ttsService.isSpeaking;
+            const ttsIsLoading = window.ttsService.isLoading;
+            console.log('[PRESENTATION-TTS] 🔍 Polling completion - count:', pollCount, 'isSpeaking:', ttsIsSpeaking, 'isLoading:', ttsIsLoading);
+
+            // Only consider complete if NOT speaking AND NOT loading
+            if ((!ttsIsSpeaking && !ttsIsLoading) || pollCount >= maxPollCount) {
               if (completionHandled) return; // Callback already handled it
               handleCompletion(); // Use the same completion handler
             } else {
-              // Still speaking, check again in 500ms
+              // Still speaking or loading, check again in 500ms
               setTimeout(checkCompletion, 500);
             }
           };
-          
+
           // Start checking for completion after a brief delay
           setTimeout(checkCompletion, 1000);
         }
