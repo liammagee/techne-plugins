@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <title>Techne Plugins Test App (Electron)</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --primary: #e94560;
+      --secondary: #0f3460;
+      --text: #eee;
+      --text-muted: #888;
+      --success: #4caf50;
+      --error: #f44336;
+      --warning: #ff9800;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      padding: 1rem 2rem;
+      border-bottom: 2px solid var(--primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      -webkit-app-region: drag;
+    }
+
+    header button {
+      -webkit-app-region: no-drag;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .badge {
+      background: var(--primary);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-left: 0.5rem;
+    }
+
+    .status {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-indicator.ready { background: var(--success); }
+    .status-indicator.error { background: var(--error); }
+    .status-indicator.loading { background: var(--warning); animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: calc(100vh - 60px);
+    }
+
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--secondary);
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .plugin-list {
+      list-style: none;
+    }
+
+    .plugin-item {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .plugin-item:hover {
+      border-color: var(--primary);
+    }
+
+    .plugin-item.active {
+      border-color: var(--primary);
+      background: rgba(233, 69, 96, 0.1);
+    }
+
+    .plugin-item.disabled {
+      opacity: 0.5;
+    }
+
+    .plugin-item .name {
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .plugin-item .status-badge {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: var(--secondary);
+    }
+
+    .plugin-item .status-badge.enabled {
+      background: var(--success);
+      color: #000;
+    }
+
+    .content {
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      filter: brightness(1.1);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: var(--secondary);
+    }
+
+    .plugin-view {
+      background: var(--surface);
+      border-radius: 12px;
+      min-height: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plugin-view-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .plugin-view-content {
+      padding: 1rem;
+      min-height: 350px;
+    }
+
+    #plugin-container {
+      width: 100%;
+      min-height: 300px;
+    }
+
+    .logs {
+      background: var(--surface);
+      border-radius: 12px;
+      margin-top: 2rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .logs-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .log-entries {
+      padding: 0.5rem;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.8rem;
+    }
+
+    .log-entry {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .log-entry.info { color: var(--text); }
+    .log-entry.warn { color: var(--warning); }
+    .log-entry.error { color: var(--error); }
+    .log-entry.success { color: var(--success); }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .test-controls {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+
+    .test-controls h3 {
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+    }
+
+    .test-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .test-result {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg);
+      font-family: monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+    }
+
+    .test-result.pass { border-left: 4px solid var(--success); }
+    .test-result.fail { border-left: 4px solid var(--error); }
+
+    .electron-info {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: var(--surface);
+      border-radius: 8px;
+      font-size: 0.8rem;
+    }
+
+    .electron-info h3 {
+      margin-bottom: 0.5rem;
+      color: var(--text-muted);
+    }
+
+    .electron-info code {
+      background: var(--bg);
+      padding: 0.125rem 0.25rem;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Techne Plugins Test App <span class="badge">Electron</span></h1>
+    </div>
+    <div class="status">
+      <span id="status-text">Initializing...</span>
+      <div id="status-indicator" class="status-indicator loading"></div>
+    </div>
+  </header>
+
+  <main>
+    <aside class="sidebar">
+      <h2>Available Plugins</h2>
+      <ul id="plugin-list" class="plugin-list">
+        <li class="plugin-item disabled">Loading plugins...</li>
+      </ul>
+
+      <h2 style="margin-top: 2rem;">Quick Actions</h2>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <button onclick="enableAllPlugins()">Enable All</button>
+        <button onclick="disableAllPlugins()" class="secondary">Disable All</button>
+        <button onclick="reloadAllPlugins()" class="secondary">Reload All</button>
+      </div>
+
+      <div class="electron-info">
+        <h3>Electron Info</h3>
+        <p>Platform: <code id="platform">-</code></p>
+        <p>Electron API: <code id="electron-api">checking...</code></p>
+      </div>
+    </aside>
+
+    <div class="content">
+      <div class="content-header">
+        <h2 id="plugin-title">Select a Plugin</h2>
+        <div class="actions">
+          <button id="btn-toggle" onclick="toggleCurrentPlugin()" disabled>Enable</button>
+          <button id="btn-mount" onclick="mountCurrentPlugin()" disabled>Mount View</button>
+          <button id="btn-unmount" onclick="unmountCurrentPlugin()" class="secondary" disabled>Unmount</button>
+        </div>
+      </div>
+
+      <div class="plugin-view">
+        <div class="plugin-view-header">
+          <span id="view-title">Plugin View</span>
+          <span id="view-status" class="status-badge">Not Mounted</span>
+        </div>
+        <div class="plugin-view-content">
+          <div id="plugin-container">
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+              </svg>
+              <p>Select a plugin and click "Mount View" to test it</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-controls">
+        <h3>Plugin Tests</h3>
+        <div class="test-buttons">
+          <button onclick="runTest('lifecycle')">Test Lifecycle</button>
+          <button onclick="runTest('events')">Test Events</button>
+          <button onclick="runTest('settings')">Test Settings</button>
+          <button onclick="runTest('electron')">Test Electron IPC</button>
+          <button onclick="runAllTests()">Run All Tests</button>
+        </div>
+        <div id="test-result" class="test-result" style="display: none;"></div>
+      </div>
+
+      <div class="logs">
+        <div class="logs-header">
+          <span>Event Log</span>
+          <button onclick="clearLogs()" class="secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Clear</button>
+        </div>
+        <div id="log-entries" class="log-entries"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Load plugin system -->
+  <script src="../../core/techne-plugin-system.js"></script>
+
+  <!-- Plugin manifest -->
+  <script>
+    window.TECHNE_PLUGIN_AUTOSTART = false;
+
+    window.TECHNE_PLUGIN_MANIFEST = [
+      { id: 'techne-backdrop', entry: 'plugins/techne-backdrop/plugin.js', enabledByDefault: false },
+      { id: 'techne-presentations', entry: 'plugins/techne-presentations/plugin.js', enabledByDefault: false },
+      { id: 'techne-markdown-renderer', entry: 'plugins/techne-markdown-renderer/plugin.js', enabledByDefault: false },
+      { id: 'techne-network-diagram', entry: 'plugins/techne-network-diagram/plugin.js', enabledByDefault: false },
+      { id: 'techne-circle', entry: 'plugins/techne-circle/plugin.js', enabledByDefault: false },
+      { id: 'techne-maze', entry: 'plugins/techne-maze/plugin.js', enabledByDefault: false },
+      { id: 'techne-ai-tutor', entry: 'plugins/techne-ai-tutor/plugin.js', enabledByDefault: false }
+    ];
+  </script>
+
+  <!-- Test app logic -->
+  <script src="app.js"></script>
+</body>
+</html>

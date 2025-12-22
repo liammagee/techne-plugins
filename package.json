@@ -4,7 +4,19 @@
   "description": "A lightweight plugin system and collection of UI plugins for web applications",
   "main": "core/techne-plugin-system.js",
   "scripts": {
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "serve:web": "node test-apps/web/server.js",
+    "serve:electron": "electron test-apps/electron/main.js",
+    "dev:web": "node test-apps/web/server.js",
+    "dev:electron": "electron test-apps/electron/main.js --dev"
   },
   "keywords": [
     "plugins",
@@ -18,5 +30,19 @@
   "repository": {
     "type": "git",
     "url": ""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/jest": "^29.5.8",
+    "electron": "^28.0.0",
+    "express": "^4.18.2",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "playwright": "^1.40.0"
+  },
+  "peerDependencies": {
+    "d3": "^7.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   }
 }
