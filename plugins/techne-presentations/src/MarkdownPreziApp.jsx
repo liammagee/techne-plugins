@@ -1336,6 +1336,24 @@ Note: You can press 'N' to toggle these speaker notes on/off during presentation
         sidebarPane.style.display = 'none';
         console.log('[Presentation] Hidden sidebar speaker notes pane on presentation start');
       }
+
+      // Hide content toolbar (high z-index floating elements on right side)
+      document.querySelectorAll('[class*="z-[12"]').forEach(el => {
+        el.dataset.hiddenByPresentation = 'true';
+        el.style.display = 'none';
+      });
+      // Also hide by checking fixed elements on right side with buttons
+      document.querySelectorAll('body > div').forEach(el => {
+        const style = window.getComputedStyle(el);
+        const right = parseInt(style.right) || 999;
+        const zIndex = parseInt(style.zIndex) || 0;
+        const buttons = el.querySelectorAll('button');
+        if (style.position === 'fixed' && right < 50 && zIndex > 1000 && buttons.length >= 3) {
+          el.dataset.hiddenByPresentation = 'true';
+          el.style.display = 'none';
+        }
+      });
+      console.log('[Presentation] Hidden content toolbar');
       
       // Create speaker notes data if it doesn't exist (after flag reset, this should work properly)
       console.log('[Presentation] DEBUG: Checking speaker notes data creation:', {
@@ -1404,6 +1422,13 @@ Note: You can press 'N' to toggle these speaker notes on/off during presentation
     } else {
       document.body.classList.remove('is-presenting');
       console.log('[Presentation] Removed is-presenting class from body');
+
+      // Restore content toolbar and other hidden elements
+      document.querySelectorAll('[data-hidden-by-presentation="true"]').forEach(el => {
+        el.style.display = '';
+        delete el.dataset.hiddenByPresentation;
+      });
+      console.log('[Presentation] Restored content toolbar');
     }
   }, [isPresenting]);
 
