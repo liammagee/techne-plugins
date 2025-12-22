@@ -4,6 +4,7 @@
 class TTSService {
   constructor() {
     this.isSpeaking = false;
+    this.isLoading = false; // True when TTS is loading/preparing but not yet playing
     this.currentUtterance = null;
     this.currentAudio = null;
     this.voice = null;
@@ -14,18 +15,18 @@ class TTSService {
     this.lemonfoxVoice = 'sarah';
     this.availabilityChecked = false;
     this.settings = null; // Will be loaded from settings
-    
+
     // Synchronous queue system - only allow one speech operation at a time
     this.speechQueue = [];
     this.isProcessingQueue = false;
     this.currentSpeechController = null; // AbortController for current speech
-    
+
     // Mutex lock to prevent concurrent audio operations
     this.audioMutex = {
       locked: false,
       queue: []
     };
-    
+
     // Track all audio elements for cleanup
     this.activeAudioElements = new Set();
     
@@ -194,11 +195,15 @@ class TTSService {
     console.log('[TTS] Text length:', text?.length || 0);
     console.log('[TTS] Mutex locked:', this.audioMutex.locked);
     console.log('[TTS] Active audio elements:', this.activeAudioElements.size);
-    
+
     if (!text) {
       console.warn('[TTS] Cannot speak - no text provided');
       return Promise.resolve();
     }
+
+    // Set loading state immediately
+    this.isLoading = true;
+    console.log('[TTS] isLoading set to true');
 
     // Wait for mutex if locked
     if (this.audioMutex.locked) {
@@ -393,7 +398,7 @@ class TTSService {
         audio.volume = this.volume || 1.0;
         this.currentAudio = audio;
         this.activeAudioElements.add(audio);
-        this.isSpeaking = true;
+        // Don't set isSpeaking=true yet - wait until audio actually starts
 
         // Handle abort
         if (signal) {
@@ -404,6 +409,7 @@ class TTSService {
               audio.currentTime = 0;
             }
             this.isSpeaking = false;
+            this.isLoading = false;
             if (audioUrl) URL.revokeObjectURL(audioUrl);
             resolve();
           });
@@ -413,6 +419,7 @@ class TTSService {
         audio.onended = () => {
           console.log('[TTS-WEB-API] Speech completed');
           this.isSpeaking = false;
+          this.isLoading = false;
           this.activeAudioElements.delete(audio);
           if (audioUrl) URL.revokeObjectURL(audioUrl);
           if (options.onEnd) options.onEnd();
@@ -422,6 +429,7 @@ class TTSService {
         audio.onerror = (e) => {
           console.error('[TTS-WEB-API] Audio playback error:', e);
           this.isSpeaking = false;
+          this.isLoading = false;
           this.activeAudioElements.delete(audio);
           if (audioUrl) URL.revokeObjectURL(audioUrl);
           if (options.onError) options.onError(e);
@@ -431,11 +439,16 @@ class TTSService {
         // Start playback
         console.log('[TTS-WEB-API] Starting audio playback');
         await audio.play();
+        // Now that audio is actually playing, set the flags
+        this.isSpeaking = true;
+        this.isLoading = false;
+        console.log('[TTS-WEB-API] Audio started, isSpeaking=true, isLoading=false');
         if (options.onStart) options.onStart();
 
       } catch (error) {
         console.error('[TTS-WEB-API] Error:', error);
         this.isSpeaking = false;
+        this.isLoading = false;
         if (audio) this.activeAudioElements.delete(audio);
         if (audioUrl) URL.revokeObjectURL(audioUrl);
 
