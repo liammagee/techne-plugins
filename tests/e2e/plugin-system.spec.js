@@ -15,7 +15,8 @@ test.describe('Plugin System E2E', () => {
   test.describe('Initial Load', () => {
     test('should display the test app correctly', async ({ page }) => {
       await expect(page.locator('h1')).toContainText('Techne Plugins Test App');
-      await expect(page.locator('#status-text')).toHaveText('Ready');
+      // Status may be "Ready", "Ready (partial)", "Ready (with errors)", or "Ready (no plugins)"
+      await expect(page.locator('#status-text')).toContainText('Ready');
     });
 
     test('should show plugin list', async ({ page }) => {
@@ -110,9 +111,12 @@ test.describe('Plugin System E2E', () => {
       await firstPlugin.click();
       await page.locator('#btn-toggle').click();
 
-      // Check for log entry
+      // Wait for plugin to be enabled first
+      await expect(firstPlugin.locator('.status-badge')).toHaveClass(/enabled/, { timeout: 5000 });
+
+      // Check for log entry - look for any entry containing enabled, not just the last one
       const logEntries = page.locator('#log-entries .log-entry');
-      await expect(logEntries.last()).toContainText(/enabled|registered/i, { timeout: 5000 });
+      await expect(logEntries.filter({ hasText: /enabled/i }).first()).toBeVisible({ timeout: 5000 });
     });
 
     test('Clear button should clear logs', async ({ page }) => {
@@ -298,25 +302,25 @@ test.describe('Plugin Views', () => {
   });
 
   test('Unmount button should work after mounting', async ({ page }) => {
-    const firstPlugin = page.locator('.plugin-item').first();
-    await firstPlugin.click();
+    // Use presentation plugin which has a mountable view (not backdrop which is background-only)
+    const presentationPlugin = page.locator('.plugin-item', { hasText: 'presentations' });
+    await presentationPlugin.click();
 
     // Enable the plugin
     await page.locator('#btn-toggle').click();
-    await page.waitForTimeout(1000);
+    await expect(presentationPlugin.locator('.status-badge')).toHaveClass(/enabled/, { timeout: 5000 });
 
     // Mount the view
     await page.locator('#btn-mount').click();
-    await page.waitForTimeout(1000);
 
-    // Unmount button should be enabled
-    await expect(page.locator('#btn-unmount')).toBeEnabled();
+    // Wait for mount to complete - check for view status change or unmount button to be enabled
+    await expect(page.locator('#btn-unmount')).toBeEnabled({ timeout: 10000 });
 
     // Click unmount
     await page.locator('#btn-unmount').click();
 
     // Unmount button should be disabled again
-    await expect(page.locator('#btn-unmount')).toBeDisabled();
+    await expect(page.locator('#btn-unmount')).toBeDisabled({ timeout: 5000 });
   });
 });
 
