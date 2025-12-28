@@ -1,12 +1,13 @@
 /**
- * GENERATIVE FAUNA OVERLAY
- * Five totems: Kookaburra, Snake, Octopus, Wallaby, Echidna
+ * GENERATIVE FAUNA OVERLAY - EXTENDED
+ * Eleven totems: Kookaburra, Snake, Octopus, Wallaby, Echidna,
+ *                Platypus, Koala, Emu, Cockatoo, Jellyfish, Crab
  *
- * Usage:
- *   const fauna = new FaunaOverlay('fauna-canvas', { opacity: [0.12, 0.28] });
- *   fauna.start();
- *   fauna.stop();
- *   fauna.toggle();
+ * Extended for the Fauna Playground with:
+ * - 6 new creatures
+ * - Size variation (sizeRange)
+ * - Dynamic color control
+ * - Live config updates
  */
 
 class FaunaOverlay {
@@ -20,17 +21,16 @@ class FaunaOverlay {
 
     // Configuration with defaults
     this.config = {
-      opacityRange: options.opacity || [0.12, 0.28], // [min, max] - increased visibility
+      opacityRange: options.opacity || [0.12, 0.28],
       entityCount: options.entityCount || [20, 30],
       lineWidthRange: options.lineWidth || [1.0, 2.0],
       driftAmount: options.driftAmount || [8, 28],
-      sizeRange: options.sizeRange || [0.4, 1.6], // creature size variation
+      sizeRange: options.sizeRange || [0.4, 1.6], // NEW: creature size variation
       parallaxMultiplier: options.parallaxMultiplier || 1.0,
       seed: options.seed || Math.random() * 999999,
-      // Swiss palette mode: uses red/black instead of earthy tones
-      swissPalette: options.swissPalette !== false, // default true
-      // Accent hue: 355 = red (#E63946), 27 = orange (#ff7a1a)
-      accentHue: options.accentHue || 355,
+      // Custom colors (override palette generation)
+      foregroundColor: options.foregroundColor || null,
+      accentColor: options.accentColor || null,
       ...options
     };
 
@@ -44,7 +44,7 @@ class FaunaOverlay {
     this.animationId = null;
 
     this.SESSION_SEED = this.config.seed;
-    this.palette = this.generatePalette(this.SESSION_SEED);
+    this.updatePalette();
 
     this.boundOnScroll = this.onScroll.bind(this);
     this.boundOnResize = this.onResize.bind(this);
@@ -71,28 +71,62 @@ class FaunaOverlay {
     return arr[Math.floor(this.rand(seed) * arr.length)];
   }
 
-  generatePalette(seed) {
-    if (this.config.swissPalette) {
-      // Swiss palette: accent color and black (#0a0a0a)
-      // Accent hue: 355 = red (#E63946), 27 = orange (#ff7a1a)
-      const accentHue = this.config.accentHue;
-      return {
+  // Parse hex color to RGB
+  hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 10, g: 10, b: 10 };
+  }
+
+  updatePalette() {
+    const fg = this.config.foregroundColor;
+    const accent = this.config.accentColor;
+
+    if (fg || accent) {
+      // Custom color mode
+      const fgRgb = this.hexToRgb(fg || '#0a0a0a');
+      const accentRgb = this.hexToRgb(accent || '#E63946');
+
+      this.palette = {
         stroke: (opacity) => {
-          const choice = this.rand(seed + opacity * 100);
+          const choice = this.rand(this.SESSION_SEED + opacity * 100);
           if (choice > 0.65) {
-            // Accent color strokes (~35%)
-            const h = accentHue + (this.rand(seed + opacity * 200) - 0.5) * 8;
-            const s = 75 + (this.rand(seed + opacity * 300) - 0.5) * 10;
-            const l = 48 + (this.rand(seed + opacity * 400) - 0.5) * 8;
+            // Accent color (~35%)
+            return `rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, ${opacity})`;
+          } else {
+            // Foreground color (~65%)
+            return `rgba(${fgRgb.r}, ${fgRgb.g}, ${fgRgb.b}, ${opacity})`;
+          }
+        },
+        ghost: (opacity) => {
+          const choice = this.rand(this.SESSION_SEED + opacity * 600);
+          if (choice > 0.7) {
+            return `rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, ${opacity * 0.4})`;
+          }
+          return `rgba(${fgRgb.r}, ${fgRgb.g}, ${fgRgb.b}, ${opacity * 0.5})`;
+        }
+      };
+    } else {
+      // Default Swiss palette (red and black)
+      const accentHue = 355;
+      this.palette = {
+        stroke: (opacity) => {
+          const choice = this.rand(this.SESSION_SEED + opacity * 100);
+          if (choice > 0.65) {
+            const h = accentHue + (this.rand(this.SESSION_SEED + opacity * 200) - 0.5) * 8;
+            const s = 75 + (this.rand(this.SESSION_SEED + opacity * 300) - 0.5) * 10;
+            const l = 48 + (this.rand(this.SESSION_SEED + opacity * 400) - 0.5) * 8;
             return `hsla(${h}, ${s}%, ${l}%, ${opacity})`;
           } else {
-            // Black/dark strokes (~65%)
-            const l = 8 + (this.rand(seed + opacity * 500) - 0.5) * 10;
+            const l = 8 + (this.rand(this.SESSION_SEED + opacity * 500) - 0.5) * 10;
             return `hsla(0, 0%, ${l}%, ${opacity})`;
           }
         },
         ghost: (opacity) => {
-          const choice = this.rand(seed + opacity * 600);
+          const choice = this.rand(this.SESSION_SEED + opacity * 600);
           if (choice > 0.7) {
             return `hsla(${accentHue}, 70%, 55%, ${opacity * 0.4})`;
           }
@@ -100,21 +134,6 @@ class FaunaOverlay {
         }
       };
     }
-
-    // Original earthy palette
-    const hueBase = this.rand(seed) * 50 + 20;
-    const satBase = 25 + this.rand(seed + 1) * 30;
-    const lightBase = 28 + this.rand(seed + 2) * 22;
-
-    return {
-      stroke: (opacity) => {
-        const h = hueBase + (this.rand(seed + opacity * 100) - 0.5) * 15;
-        const s = satBase + (this.rand(seed + opacity * 200) - 0.5) * 10;
-        const l = lightBase + (this.rand(seed + opacity * 300) - 0.5) * 8;
-        return `hsla(${h}, ${s}%, ${l}%, ${opacity})`;
-      },
-      ghost: (opacity) => `hsla(${hueBase}, ${satBase * 0.4}%, ${lightBase + 25}%, ${opacity * 0.6})`
-    };
   }
 
   // ========== GESTURE PRIMITIVES ==========
@@ -495,6 +514,248 @@ class FaunaOverlay {
     ctx.stroke();
   }
 
+  // ========== NEW CREATURE PRIMITIVES ==========
+
+  duckBill(cx, cy, size, angle, seed) {
+    const ctx = this.ctx;
+    const length = size * (0.8 + this.rand(seed) * 0.4);
+    const width = size * (0.5 + this.rand(seed + 1) * 0.3);
+    const tipX = cx + Math.cos(angle) * length;
+    const tipY = cy + Math.sin(angle) * length;
+    const perpAngle = angle + Math.PI / 2;
+
+    // Flat, rounded bill shape
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(perpAngle) * width * 0.3, cy + Math.sin(perpAngle) * width * 0.3);
+    ctx.quadraticCurveTo(
+      tipX + Math.cos(perpAngle) * width * 0.5,
+      tipY + Math.sin(perpAngle) * width * 0.5,
+      tipX, tipY + width * 0.1
+    );
+    ctx.quadraticCurveTo(
+      tipX - Math.cos(perpAngle) * width * 0.5,
+      tipY - Math.sin(perpAngle) * width * 0.5,
+      cx - Math.cos(perpAngle) * width * 0.3, cy - Math.sin(perpAngle) * width * 0.3
+    );
+    ctx.closePath();
+    ctx.stroke();
+
+    // Nostril dots
+    if (this.rand(seed + 2) > 0.4) {
+      const nostrilX = cx + Math.cos(angle) * length * 0.6;
+      const nostrilY = cy + Math.sin(angle) * length * 0.6;
+      ctx.beginPath();
+      ctx.arc(nostrilX, nostrilY, size * 0.05, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  beaverTail(cx, cy, size, angle, seed) {
+    const ctx = this.ctx;
+    const length = size * (1.0 + this.rand(seed) * 0.5);
+    const width = size * (0.4 + this.rand(seed + 1) * 0.2);
+    const tipX = cx + Math.cos(angle) * length;
+    const tipY = cy + Math.sin(angle) * length;
+    const perpAngle = angle + Math.PI / 2;
+
+    // Flat oval tail
+    ctx.beginPath();
+    ctx.ellipse(
+      cx + Math.cos(angle) * length * 0.5,
+      cy + Math.sin(angle) * length * 0.5,
+      length * 0.5,
+      width,
+      angle,
+      0, Math.PI * 2
+    );
+    ctx.stroke();
+
+    // Cross-hatch pattern
+    if (this.rand(seed + 2) > 0.3) {
+      const hatchCount = 3 + Math.floor(this.rand(seed + 3) * 3);
+      ctx.beginPath();
+      for (let i = 0; i < hatchCount; i++) {
+        const t = (i + 1) / (hatchCount + 1);
+        const hx = cx + Math.cos(angle) * length * t;
+        const hy = cy + Math.sin(angle) * length * t;
+        const hWidth = width * (1 - Math.abs(t - 0.5) * 1.5);
+        ctx.moveTo(hx + Math.cos(perpAngle) * hWidth, hy + Math.sin(perpAngle) * hWidth);
+        ctx.lineTo(hx - Math.cos(perpAngle) * hWidth, hy - Math.sin(perpAngle) * hWidth);
+      }
+      ctx.stroke();
+    }
+  }
+
+  roundEar(cx, cy, size, seed) {
+    const ctx = this.ctx;
+    const radius = size * (0.8 + this.rand(seed) * 0.4);
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Inner ear
+    if (this.rand(seed + 1) > 0.3) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  crest(cx, cy, size, angle, seed) {
+    const ctx = this.ctx;
+    const featherCount = 4 + Math.floor(this.rand(seed) * 4);
+    const spread = 0.6 + this.rand(seed + 1) * 0.4;
+
+    for (let i = 0; i < featherCount; i++) {
+      const featherAngle = angle + (i - featherCount / 2) * spread * 0.15;
+      const featherLen = size * (0.6 + this.rand(seed + i + 10) * 0.6);
+      const tipX = cx + Math.cos(featherAngle) * featherLen;
+      const tipY = cy + Math.sin(featherAngle) * featherLen;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      const curve = (this.rand(seed + i + 20) - 0.5) * size * 0.3;
+      ctx.quadraticCurveTo(
+        cx + Math.cos(featherAngle) * featherLen * 0.5 + curve,
+        cy + Math.sin(featherAngle) * featherLen * 0.5,
+        tipX, tipY
+      );
+      ctx.stroke();
+    }
+  }
+
+  curvedBeak(cx, cy, size, angle, seed) {
+    const ctx = this.ctx;
+    const length = size * (0.6 + this.rand(seed) * 0.4);
+    const curvature = 0.3 + this.rand(seed + 1) * 0.4;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - size * 0.1);
+    ctx.quadraticCurveTo(
+      cx + Math.cos(angle) * length * 0.5,
+      cy + Math.sin(angle) * length * 0.5 - size * curvature,
+      cx + Math.cos(angle) * length,
+      cy + Math.sin(angle) * length
+    );
+    ctx.quadraticCurveTo(
+      cx + Math.cos(angle) * length * 0.5,
+      cy + Math.sin(angle) * length * 0.5 + size * 0.1,
+      cx, cy + size * 0.1
+    );
+    ctx.stroke();
+  }
+
+  jellyfishDome(cx, cy, size, seed) {
+    const ctx = this.ctx;
+    const width = size * (0.8 + this.rand(seed) * 0.4);
+    const height = size * (0.5 + this.rand(seed + 1) * 0.3);
+
+    // Main dome
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, width, height, 0, Math.PI, 0);
+    ctx.stroke();
+
+    // Dome ridges
+    if (this.rand(seed + 2) > 0.4) {
+      const ridgeCount = 3 + Math.floor(this.rand(seed + 3) * 3);
+      for (let i = 0; i < ridgeCount; i++) {
+        const t = (i + 1) / (ridgeCount + 1);
+        const rx = cx + (t - 0.5) * width * 1.6;
+        ctx.beginPath();
+        ctx.moveTo(rx, cy);
+        ctx.quadraticCurveTo(rx, cy - height * 0.7, cx, cy - height);
+        ctx.stroke();
+      }
+    }
+  }
+
+  flowingTentacles(cx, cy, size, seed, count, t = 0) {
+    const ctx = this.ctx;
+    const spread = 0.8 + this.rand(seed) * 0.4;
+
+    for (let i = 0; i < count; i++) {
+      const baseAngle = Math.PI / 2 + (i - count / 2) * spread * 0.2;
+      const length = size * (0.8 + this.rand(seed + i + 10) * 0.8);
+      const segments = 8 + Math.floor(this.rand(seed + i + 20) * 6);
+
+      ctx.beginPath();
+      let x = cx + (i - count / 2) * size * 0.15;
+      let y = cy;
+      ctx.moveTo(x, y);
+
+      let angle = baseAngle;
+      for (let j = 0; j < segments; j++) {
+        const segT = j / segments;
+        const wave = Math.sin(t * 0.5 + i * 0.7 + j * 0.3) * 0.2;
+        angle += wave + (this.rand(seed + i * 100 + j) - 0.5) * 0.3;
+        const segLen = (length / segments) * (1 - segT * 0.3);
+        x += Math.cos(angle) * segLen;
+        y += Math.sin(angle) * segLen;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  crabClaw(cx, cy, size, angle, seed, mirror = false) {
+    const ctx = this.ctx;
+    const clawLen = size * (0.6 + this.rand(seed) * 0.3);
+    const clawWidth = size * (0.3 + this.rand(seed + 1) * 0.2);
+    const openAngle = 0.3 + this.rand(seed + 2) * 0.4;
+
+    const dir = mirror ? -1 : 1;
+    const perpAngle = angle + Math.PI / 2 * dir;
+
+    // Arm
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    const elbowX = cx + Math.cos(angle) * clawLen * 0.6;
+    const elbowY = cy + Math.sin(angle) * clawLen * 0.6;
+    ctx.lineTo(elbowX, elbowY);
+    ctx.stroke();
+
+    // Upper pincer
+    ctx.beginPath();
+    ctx.moveTo(elbowX, elbowY);
+    ctx.lineTo(
+      elbowX + Math.cos(angle - openAngle * dir) * clawLen * 0.5,
+      elbowY + Math.sin(angle - openAngle * dir) * clawLen * 0.5
+    );
+    ctx.stroke();
+
+    // Lower pincer
+    ctx.beginPath();
+    ctx.moveTo(elbowX, elbowY);
+    ctx.lineTo(
+      elbowX + Math.cos(angle + openAngle * dir) * clawLen * 0.4,
+      elbowY + Math.sin(angle + openAngle * dir) * clawLen * 0.4
+    );
+    ctx.stroke();
+  }
+
+  crabLegs(cx, cy, size, seed, count = 4) {
+    const ctx = this.ctx;
+
+    for (let i = 0; i < count; i++) {
+      const side = i < count / 2 ? -1 : 1;
+      const idx = i < count / 2 ? i : i - count / 2;
+      const baseAngle = side * (0.3 + idx * 0.25);
+      const legLen = size * (0.5 + this.rand(seed + i) * 0.3);
+
+      // Leg segments
+      const jointX = cx + Math.cos(baseAngle + Math.PI / 2 * side) * legLen * 0.5;
+      const jointY = cy + Math.sin(baseAngle) * legLen * 0.2 + idx * size * 0.15;
+      const tipX = jointX + Math.cos(baseAngle + Math.PI / 2 * side + 0.5 * side) * legLen * 0.6;
+      const tipY = jointY + Math.sin(baseAngle + 0.3) * legLen * 0.4;
+
+      ctx.beginPath();
+      ctx.moveTo(cx + side * size * 0.3, cy + idx * size * 0.12);
+      ctx.lineTo(jointX, jointY);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+    }
+  }
+
   // ========== CREATURE TEMPLATES ==========
 
   getTemplates() {
@@ -568,6 +829,90 @@ class FaunaOverlay {
         eyeSize: 3 + this.rand(seed + 9) * 3,
         eyeVisible: this.rand(seed + 10) > 0.3,
         hasLegs: this.rand(seed + 11) > 0.5
+      }),
+
+      // ========== NEW CREATURES ==========
+
+      platypus: (seed) => ({
+        type: 'platypus',
+        bodySize: 25 + this.rand(seed) * 20,
+        bodyShape: this.randChoice(['streamlined', 'rounded'], seed + 1),
+        billSize: 18 + this.rand(seed + 2) * 12,
+        billAngle: (this.rand(seed + 3) - 0.5) * 0.4,
+        tailSize: 20 + this.rand(seed + 4) * 15,
+        tailAngle: Math.PI * (0.4 + this.rand(seed + 5) * 0.3),
+        eyeSize: 4 + this.rand(seed + 6) * 3,
+        hasWebbing: this.rand(seed + 7) > 0.4,
+        hasLegs: this.rand(seed + 8) > 0.5,
+        hasFur: this.rand(seed + 9) > 0.6
+      }),
+
+      koala: (seed) => ({
+        type: 'koala',
+        headSize: 25 + this.rand(seed) * 18,
+        headShape: this.randChoice(['round', 'oval'], seed + 1),
+        earSize: 12 + this.rand(seed + 2) * 10,
+        earFluffy: this.rand(seed + 3) > 0.5,
+        noseSize: 10 + this.rand(seed + 4) * 8,
+        eyeSize: 6 + this.rand(seed + 5) * 4,
+        eyeSleepy: this.rand(seed + 6) > 0.4,
+        hasBody: this.rand(seed + 7) > 0.5,
+        hasArms: this.rand(seed + 8) > 0.6,
+        clingingPose: this.rand(seed + 9) > 0.5
+      }),
+
+      emu: (seed) => ({
+        type: 'emu',
+        neckLength: 40 + this.rand(seed) * 30,
+        neckCurve: (this.rand(seed + 1) - 0.5) * 0.6,
+        headSize: 12 + this.rand(seed + 2) * 8,
+        beakSize: 8 + this.rand(seed + 3) * 6,
+        eyeSize: 5 + this.rand(seed + 4) * 4,
+        hasFeathers: this.rand(seed + 5) > 0.4,
+        featherCount: 5 + Math.floor(this.rand(seed + 6) * 8),
+        hasBody: this.rand(seed + 7) > 0.5,
+        bodySize: 30 + this.rand(seed + 8) * 25,
+        hasLegs: this.rand(seed + 9) > 0.6
+      }),
+
+      cockatoo: (seed) => ({
+        type: 'cockatoo',
+        headSize: 18 + this.rand(seed) * 14,
+        headShape: this.randChoice(['round', 'angular'], seed + 1),
+        crestSize: 20 + this.rand(seed + 2) * 18,
+        crestRaised: this.rand(seed + 3) > 0.5,
+        beakSize: 12 + this.rand(seed + 4) * 10,
+        beakCurved: this.rand(seed + 5) > 0.3,
+        eyeSize: 6 + this.rand(seed + 6) * 4,
+        eyeRing: this.rand(seed + 7) > 0.5,
+        hasBody: this.rand(seed + 8) > 0.4,
+        wingHint: this.rand(seed + 9) > 0.5
+      }),
+
+      jellyfish: (seed) => ({
+        type: 'jellyfish',
+        domeSize: 25 + this.rand(seed) * 20,
+        domeShape: this.randChoice(['round', 'tall', 'flat'], seed + 1),
+        tentacleCount: 5 + Math.floor(this.rand(seed + 2) * 6),
+        tentacleLength: 35 + this.rand(seed + 3) * 40,
+        tentacleWavy: this.rand(seed + 4) > 0.3,
+        hasOralArms: this.rand(seed + 5) > 0.5,
+        oralArmCount: 2 + Math.floor(this.rand(seed + 6) * 3),
+        hasPattern: this.rand(seed + 7) > 0.4,
+        glowing: this.rand(seed + 8) > 0.6
+      }),
+
+      crab: (seed) => ({
+        type: 'crab',
+        bodySize: 22 + this.rand(seed) * 18,
+        bodyShape: this.randChoice(['round', 'hexagonal', 'oval'], seed + 1),
+        clawSize: 15 + this.rand(seed + 2) * 12,
+        clawOpen: this.rand(seed + 3) > 0.5,
+        legCount: 6 + Math.floor(this.rand(seed + 4) * 3),
+        eyeStalkLength: 5 + this.rand(seed + 5) * 8,
+        eyeSize: 3 + this.rand(seed + 6) * 3,
+        hasPattern: this.rand(seed + 7) > 0.5,
+        hasSpines: this.rand(seed + 8) > 0.6
       })
     };
   }
@@ -576,11 +921,17 @@ class FaunaOverlay {
 
   generateEntity(seed) {
     const weights = [
-      { template: 'kookaburra', weight: 0.22 },
-      { template: 'snake', weight: 0.20 },
-      { template: 'octopus', weight: 0.18 },
-      { template: 'wallaby', weight: 0.22 },
-      { template: 'echidna', weight: 0.18 }
+      { template: 'kookaburra', weight: 0.12 },
+      { template: 'snake', weight: 0.10 },
+      { template: 'octopus', weight: 0.10 },
+      { template: 'wallaby', weight: 0.12 },
+      { template: 'echidna', weight: 0.10 },
+      { template: 'platypus', weight: 0.09 },
+      { template: 'koala', weight: 0.09 },
+      { template: 'emu', weight: 0.08 },
+      { template: 'cockatoo', weight: 0.08 },
+      { template: 'jellyfish', weight: 0.06 },
+      { template: 'crab', weight: 0.06 }
     ];
 
     let r = this.rand(seed);
@@ -600,29 +951,28 @@ class FaunaOverlay {
     const [sizeMin, sizeMax] = this.config.sizeRange;
 
     const baseX = this.rand(seed + 10000) * this.width;
+
+    // Size variation from config
     const scale = sizeMin + this.randGauss(seed + 10002) * (sizeMax - sizeMin);
+
     const rotation = (this.rand(seed + 10003) - 0.5) * 0.45;
     const parallaxSpeed = (0.08 + this.rand(seed + 10004) * 0.5) * this.config.parallaxMultiplier;
 
     // Bidirectional: ~40% emerge scrolling down, ~60% emerge scrolling up
     const emergeDirection = this.rand(seed + 10011) > 0.6 ? -1 : 1;
 
-    // Position based on direction - downward emergers start higher (off top of screen)
     const baseY = emergeDirection === 1
-      ? this.rand(seed + 10001) * this.height * 3.5  // normal: spread through page
-      : -this.height * 0.5 - this.rand(seed + 10001) * this.height * 2.5;  // reversed: start above viewport
+      ? this.rand(seed + 10001) * this.height * 3.5
+      : -this.height * 0.5 - this.rand(seed + 10001) * this.height * 2.5;
 
-    // Varied opacities: some very faint, some bold
+    // Varied opacities
     const opacityVariance = this.rand(seed + 10012);
     let opacity;
     if (opacityVariance < 0.3) {
-      // 30% very faint (ghost-like)
       opacity = opacityMin * 0.5 + this.rand(seed + 10005) * (opacityMin * 0.5);
     } else if (opacityVariance > 0.85) {
-      // 15% bold/prominent
       opacity = opacityMax + this.rand(seed + 10005) * (opacityMax * 0.3);
     } else {
-      // 55% normal range
       opacity = opacityMin + this.rand(seed + 10005) * (opacityMax - opacityMin);
     }
 
@@ -641,7 +991,6 @@ class FaunaOverlay {
 
   drawEntity(entity, scrollOffset, t) {
     const x = entity.baseX + Math.sin(t * entity.driftSpeed + entity.phase) * entity.driftAmount;
-    // Bidirectional: emergeDirection controls whether entity moves up or down with scroll
     const scrollEffect = scrollOffset * entity.parallaxSpeed * entity.emergeDirection;
     const y = entity.baseY - scrollEffect + Math.cos(t * entity.driftSpeed * 0.7 + entity.phase) * entity.driftAmount * 0.5;
 
@@ -665,12 +1014,18 @@ class FaunaOverlay {
       case 'octopus': this.drawOctopus(entity, t); break;
       case 'wallaby': this.drawWallaby(entity, t); break;
       case 'echidna': this.drawEchidna(entity, t); break;
+      case 'platypus': this.drawPlatypus(entity, t); break;
+      case 'koala': this.drawKoala(entity, t); break;
+      case 'emu': this.drawEmu(entity, t); break;
+      case 'cockatoo': this.drawCockatoo(entity, t); break;
+      case 'jellyfish': this.drawJellyfish(entity, t); break;
+      case 'crab': this.drawCrab(entity, t); break;
     }
 
     ctx.restore();
   }
 
-  // ========== CREATURE DRAWING ==========
+  // ========== CREATURE DRAWING (Original 5) ==========
 
   drawKookaburra(entity, t) {
     const tpl = entity.template;
@@ -912,6 +1267,383 @@ class FaunaOverlay {
     }
   }
 
+  // ========== NEW CREATURE DRAWING (6 new creatures) ==========
+
+  drawPlatypus(entity, t) {
+    const tpl = entity.template;
+    const s = entity.seed;
+    const bs = tpl.bodySize;
+    const ctx = this.ctx;
+
+    // Body
+    if (tpl.bodyShape === 'streamlined') {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, bs * 1.2, bs * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, bs, bs * 0.6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Fur texture
+    if (tpl.hasFur) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      this.hatchField(0, 0, bs * 0.5, s + 50, Math.PI * 0.1);
+    }
+
+    // Duck bill
+    ctx.strokeStyle = this.palette.stroke(entity.opacity);
+    this.duckBill(bs * 0.9, 0, tpl.billSize, tpl.billAngle, s + 100);
+
+    // Eye
+    ctx.beginPath();
+    ctx.arc(bs * 0.5, -bs * 0.15, tpl.eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Beaver tail
+    this.beaverTail(-bs * 0.9, bs * 0.1, tpl.tailSize, tpl.tailAngle + Math.PI, s + 200);
+
+    // Webbed feet
+    if (tpl.hasLegs) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      // Front foot
+      ctx.beginPath();
+      ctx.moveTo(bs * 0.3, bs * 0.4);
+      ctx.lineTo(bs * 0.4, bs * 0.7);
+      for (let i = 0; i < 4; i++) {
+        ctx.moveTo(bs * 0.4, bs * 0.7);
+        ctx.lineTo(bs * 0.3 + i * bs * 0.08, bs * 0.85);
+      }
+      ctx.stroke();
+      // Back foot
+      ctx.beginPath();
+      ctx.moveTo(-bs * 0.3, bs * 0.4);
+      ctx.lineTo(-bs * 0.4, bs * 0.7);
+      for (let i = 0; i < 4; i++) {
+        ctx.moveTo(-bs * 0.4, bs * 0.7);
+        ctx.lineTo(-bs * 0.5 + i * bs * 0.08, bs * 0.85);
+      }
+      ctx.stroke();
+    }
+  }
+
+  drawKoala(entity, t) {
+    const tpl = entity.template;
+    const s = entity.seed;
+    const hs = tpl.headSize;
+    const ctx = this.ctx;
+
+    // Head
+    if (tpl.headShape === 'round') {
+      ctx.beginPath();
+      ctx.arc(0, 0, hs, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, hs * 0.9, hs * 1.1, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Big fluffy ears
+    const earOffset = hs * 0.7;
+    this.roundEar(-earOffset, -hs * 0.5, tpl.earSize, s + 100);
+    this.roundEar(earOffset, -hs * 0.5, tpl.earSize, s + 101);
+
+    // Fluffy ear texture
+    if (tpl.earFluffy) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      this.dotField(-earOffset, -hs * 0.5, tpl.earSize * 0.5, s + 110, 5);
+      this.dotField(earOffset, -hs * 0.5, tpl.earSize * 0.5, s + 111, 5);
+    }
+
+    // Big nose
+    ctx.strokeStyle = this.palette.stroke(entity.opacity);
+    ctx.beginPath();
+    ctx.ellipse(0, hs * 0.3, tpl.noseSize * 0.6, tpl.noseSize * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes (possibly sleepy)
+    if (tpl.eyeSleepy) {
+      // Half-closed eyes
+      ctx.beginPath();
+      ctx.arc(-hs * 0.3, -hs * 0.1, tpl.eyeSize, 0, Math.PI);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(hs * 0.3, -hs * 0.1, tpl.eyeSize, 0, Math.PI);
+      ctx.stroke();
+    } else {
+      this.eyeMark(-hs * 0.3, -hs * 0.1, tpl.eyeSize, s + 200);
+      this.eyeMark(hs * 0.3, -hs * 0.1, tpl.eyeSize, s + 201);
+    }
+
+    // Body (clinging pose)
+    if (tpl.hasBody) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      ctx.beginPath();
+      ctx.ellipse(0, hs * 1.5, hs * 0.8, hs * 1.0, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Arms
+      if (tpl.hasArms) {
+        ctx.beginPath();
+        if (tpl.clingingPose) {
+          // Arms reaching out
+          ctx.moveTo(-hs * 0.6, hs * 1.0);
+          ctx.quadraticCurveTo(-hs * 1.2, hs * 0.8, -hs * 1.0, hs * 1.5);
+          ctx.moveTo(hs * 0.6, hs * 1.0);
+          ctx.quadraticCurveTo(hs * 1.2, hs * 0.8, hs * 1.0, hs * 1.5);
+        } else {
+          ctx.moveTo(-hs * 0.6, hs * 1.2);
+          ctx.lineTo(-hs * 0.8, hs * 1.8);
+          ctx.moveTo(hs * 0.6, hs * 1.2);
+          ctx.lineTo(hs * 0.8, hs * 1.8);
+        }
+        ctx.stroke();
+      }
+    }
+  }
+
+  drawEmu(entity, t) {
+    const tpl = entity.template;
+    const s = entity.seed;
+    const ctx = this.ctx;
+
+    // Long neck
+    const neckEndX = Math.sin(tpl.neckCurve) * tpl.neckLength * 0.3;
+    const neckEndY = -tpl.neckLength;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(
+      neckEndX * 1.5,
+      neckEndY * 0.5,
+      neckEndX,
+      neckEndY
+    );
+    ctx.stroke();
+
+    // Feathers on neck
+    if (tpl.hasFeathers) {
+      for (let i = 0; i < tpl.featherCount; i++) {
+        const t = 0.2 + (i / tpl.featherCount) * 0.6;
+        const fx = neckEndX * t * 1.2;
+        const fy = neckEndY * t;
+        const fAngle = Math.PI / 2 + (this.rand(s + i + 10) - 0.5) * 0.5;
+        this.featherStrokes(fx, fy, tpl.headSize * 0.5, fAngle, s + 300 + i);
+      }
+    }
+
+    // Small head
+    ctx.beginPath();
+    ctx.arc(neckEndX, neckEndY, tpl.headSize, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Beak
+    this.beakForm(neckEndX + tpl.headSize * 0.7, neckEndY, tpl.beakSize, 0.1, s + 100);
+
+    // Eye
+    this.eyeMark(neckEndX + tpl.headSize * 0.2, neckEndY - tpl.headSize * 0.2, tpl.eyeSize, s + 200);
+
+    // Body
+    if (tpl.hasBody) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      ctx.beginPath();
+      ctx.ellipse(0, tpl.bodySize * 0.5, tpl.bodySize * 0.7, tpl.bodySize * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Fluffy body feathers
+      this.spineRadial(0, tpl.bodySize * 0.3, tpl.bodySize * 0.5, s + 400, -Math.PI, Math.PI);
+    }
+
+    // Long legs
+    if (tpl.hasLegs) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      const legY = tpl.hasBody ? tpl.bodySize : 0;
+      ctx.beginPath();
+      // Right leg
+      ctx.moveTo(tpl.bodySize * 0.2, legY);
+      ctx.lineTo(tpl.bodySize * 0.3, legY + tpl.neckLength * 0.8);
+      ctx.lineTo(tpl.bodySize * 0.5, legY + tpl.neckLength * 0.85);
+      // Left leg
+      ctx.moveTo(-tpl.bodySize * 0.2, legY);
+      ctx.lineTo(-tpl.bodySize * 0.25, legY + tpl.neckLength * 0.7);
+      ctx.lineTo(-tpl.bodySize * 0.1, legY + tpl.neckLength * 0.75);
+      ctx.stroke();
+    }
+  }
+
+  drawCockatoo(entity, t) {
+    const tpl = entity.template;
+    const s = entity.seed;
+    const hs = tpl.headSize;
+    const ctx = this.ctx;
+
+    // Head
+    if (tpl.headShape === 'round') {
+      ctx.beginPath();
+      ctx.arc(0, 0, hs, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      this.shard(0, 0, hs * 1.1, s);
+    }
+
+    // Magnificent crest
+    const crestAngle = tpl.crestRaised ? -Math.PI / 2 : -Math.PI / 2 - 0.5;
+    this.crest(0, -hs * 0.6, tpl.crestSize, crestAngle, s + 100);
+
+    // Curved beak
+    if (tpl.beakCurved) {
+      this.curvedBeak(hs * 0.5, hs * 0.2, tpl.beakSize, 0.3, s + 200);
+    } else {
+      this.beakForm(hs * 0.5, hs * 0.2, tpl.beakSize, 0.2, s + 200);
+    }
+
+    // Eye with ring
+    this.eyeMark(hs * 0.2, -hs * 0.15, tpl.eyeSize, s + 300);
+    if (tpl.eyeRing) {
+      ctx.beginPath();
+      ctx.arc(hs * 0.2, -hs * 0.15, tpl.eyeSize * 1.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Body
+    if (tpl.hasBody) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      ctx.beginPath();
+      ctx.moveTo(-hs * 0.4, hs * 0.8);
+      ctx.quadraticCurveTo(-hs * 0.2, hs * 1.8, 0, hs * 2.4);
+      ctx.quadraticCurveTo(hs * 0.3, hs * 1.8, hs * 0.4, hs * 0.8);
+      ctx.stroke();
+
+      // Wing hint
+      if (tpl.wingHint) {
+        ctx.strokeStyle = this.palette.stroke(entity.opacity * 0.6);
+        this.featherStrokes(-hs * 0.5, hs * 1.3, hs * 0.8, Math.PI * 0.6, s + 400);
+        this.featherStrokes(-hs * 0.3, hs * 1.5, hs * 0.7, Math.PI * 0.65, s + 401);
+      }
+    }
+  }
+
+  drawJellyfish(entity, t) {
+    const tpl = entity.template;
+    const s = entity.seed;
+    const ds = tpl.domeSize;
+    const ctx = this.ctx;
+
+    // Dome
+    let domeHeight = ds;
+    if (tpl.domeShape === 'tall') domeHeight = ds * 1.3;
+    else if (tpl.domeShape === 'flat') domeHeight = ds * 0.6;
+
+    this.jellyfishDome(0, 0, ds, s);
+
+    // Pattern on dome
+    if (tpl.hasPattern) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      this.dotField(0, -domeHeight * 0.3, ds * 0.4, s + 50, 6);
+    }
+
+    // Oral arms (frilly center tentacles)
+    if (tpl.hasOralArms) {
+      ctx.strokeStyle = this.palette.stroke(entity.opacity * 0.8);
+      for (let i = 0; i < tpl.oralArmCount; i++) {
+        const armX = (i - tpl.oralArmCount / 2) * ds * 0.2;
+        const armLen = tpl.tentacleLength * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(armX, domeHeight * 0.2);
+        let y = domeHeight * 0.2;
+        let x = armX;
+        for (let j = 0; j < 6; j++) {
+          const wave = Math.sin(t * 0.4 + i + j * 0.5) * ds * 0.1;
+          y += armLen / 6;
+          x = armX + wave;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    // Flowing tentacles
+    ctx.strokeStyle = this.palette.stroke(entity.opacity * 0.7);
+    this.flowingTentacles(0, domeHeight * 0.3, tpl.tentacleLength, s + 200, tpl.tentacleCount, t);
+
+    // Glowing effect
+    if (tpl.glowing) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity * 0.5);
+      ctx.beginPath();
+      ctx.arc(0, -domeHeight * 0.3, ds * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  drawCrab(entity, t) {
+    const tpl = entity.template;
+    const s = entity.seed;
+    const bs = tpl.bodySize;
+    const ctx = this.ctx;
+
+    // Body/shell
+    if (tpl.bodyShape === 'round') {
+      ctx.beginPath();
+      ctx.arc(0, 0, bs, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (tpl.bodyShape === 'hexagonal') {
+      const points = 6;
+      ctx.beginPath();
+      for (let i = 0; i < points; i++) {
+        const angle = (i / points) * Math.PI * 2 - Math.PI / 2;
+        const x = Math.cos(angle) * bs;
+        const y = Math.sin(angle) * bs * 0.7;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, bs * 1.2, bs * 0.7, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Shell pattern
+    if (tpl.hasPattern) {
+      ctx.strokeStyle = this.palette.ghost(entity.opacity);
+      this.arcFragment(0, 0, bs * 0.5, s + 50);
+      this.dotField(0, -bs * 0.2, bs * 0.3, s + 60, 4);
+    }
+
+    // Spines
+    if (tpl.hasSpines) {
+      ctx.strokeStyle = this.palette.stroke(entity.opacity * 0.7);
+      this.spineRadial(0, -bs * 0.3, bs * 0.3, s + 70, -Math.PI * 0.8, Math.PI * 0.6);
+    }
+
+    // Eye stalks
+    ctx.strokeStyle = this.palette.stroke(entity.opacity);
+    const eyeStalkY = -bs * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-bs * 0.25, eyeStalkY);
+    ctx.lineTo(-bs * 0.3, eyeStalkY - tpl.eyeStalkLength);
+    ctx.moveTo(bs * 0.25, eyeStalkY);
+    ctx.lineTo(bs * 0.3, eyeStalkY - tpl.eyeStalkLength);
+    ctx.stroke();
+
+    // Eyes
+    ctx.beginPath();
+    ctx.arc(-bs * 0.3, eyeStalkY - tpl.eyeStalkLength, tpl.eyeSize, 0, Math.PI * 2);
+    ctx.arc(bs * 0.3, eyeStalkY - tpl.eyeStalkLength, tpl.eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Claws
+    const clawAngle = tpl.clawOpen ? 0.3 : 0.1;
+    this.crabClaw(-bs * 1.0, 0, tpl.clawSize, -0.3, s + 100, false);
+    this.crabClaw(bs * 1.0, 0, tpl.clawSize, Math.PI + 0.3, s + 101, true);
+
+    // Legs
+    this.crabLegs(0, bs * 0.2, bs, s + 200, tpl.legCount);
+  }
+
   // ========== LIFECYCLE ==========
 
   init() {
@@ -992,15 +1724,44 @@ class FaunaOverlay {
     return this.active;
   }
 
+  // ========== NEW API METHODS ==========
+
   /**
-   * Update the accent color (for theme switching)
-   * @param {string} accent - 'red' or 'orange'
+   * Set foreground and accent colors
+   * @param {string} foreground - Hex color for foreground (e.g., '#0a0a0a')
+   * @param {string} accent - Hex color for accent (e.g., '#E63946')
    */
-  setAccent(accent) {
-    // Red: hue 355, Orange: hue 27
-    this.config.accentHue = accent === 'orange' ? 27 : 355;
-    // Regenerate palette with new accent
-    this.palette = this.generatePalette(this.SESSION_SEED);
+  setColors(foreground, accent) {
+    this.config.foregroundColor = foreground;
+    this.config.accentColor = accent;
+    this.updatePalette();
+  }
+
+  /**
+   * Update configuration and regenerate entities
+   * @param {Object} newConfig - Configuration updates
+   */
+  updateConfig(newConfig) {
+    Object.assign(this.config, newConfig);
+    this.updatePalette();
+    this.initEntities();
+  }
+
+  /**
+   * Regenerate all entities with a new seed
+   */
+  regenerate() {
+    this.SESSION_SEED = Math.random() * 999999;
+    this.updatePalette();
+    this.initEntities();
+  }
+
+  /**
+   * Get current entity count
+   * @returns {number}
+   */
+  getEntityCount() {
+    return this.entities.length;
   }
 }
 
