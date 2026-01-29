@@ -1,7 +1,7 @@
 (function () {
     const PLUGIN_ID = 'techne-markdown-renderer';
     const BASE = 'plugins/techne-markdown-renderer';
-    const VERSION = '20260107c'; // Cache bust version
+    const VERSION = '20260124a'; // Cache bust version
 
     const register = () => {
         if (!window.TechnePlugins?.register) return;
@@ -31,19 +31,55 @@
 
                 // Auto-load bibliography files
                 if (window.TechneBibtexParser && !window.bibEntries?.length) {
-                    try {
-                        await window.TechneBibtexParser.loadAndSetGlobal('/markdown/references.bib');
-                        console.log(`[${PLUGIN_ID}] Loaded references.bib`);
-
-                        // Also load exported_items.bib and merge
-                        const exported = await window.TechneBibtexParser.loadFromFile('/markdown/exported_items.bib');
-                        if (exported?.length) {
-                            window.TechneBibtexParser.addEntries(exported);
-                            console.log(`[${PLUGIN_ID}] Added ${exported.length} entries from exported_items.bib`);
+                    const resolveBibPath = async (filename) => {
+                        if (!window.electronAPI?.invoke) {
+                            return filename;
                         }
 
-                        console.log(`[${PLUGIN_ID}] Bibliography loaded: ${window.bibEntries?.length || 0} entries`);
-                        host.emit('bibliography:loaded', { count: window.bibEntries?.length || 0 });
+                        const workingDir = window.appSettings?.workingDirectory || '';
+                        const baseName = workingDir.split(/[\/]/).pop();
+                        const candidateDirs = [''];
+                        if (baseName) {
+                            if (baseName !== 'lectures') candidateDirs.push('lectures');
+                            if (baseName !== 'markdown') candidateDirs.push('markdown');
+                        } else {
+                            candidateDirs.push('lectures', 'markdown');
+                        }
+
+                        for (const dir of candidateDirs) {
+                            try {
+                                const files = await window.electronAPI.invoke('list-directory-files', dir);
+                                if (files?.some(file => file.isFile && file.name === filename)) {
+                                    return dir ? `${dir}/${filename}` : filename;
+                                }
+                            } catch (error) {
+                                // Ignore missing directories or list errors for optional files.
+                            }
+                        }
+
+                        return null;
+                    };
+
+                    try {
+                        const referencesPath = await resolveBibPath('references.bib');
+                        if (referencesPath) {
+                            await window.TechneBibtexParser.loadAndSetGlobal(referencesPath);
+                            console.log(`[${PLUGIN_ID}] Loaded ${referencesPath}`);
+                        }
+
+                        const exportedPath = await resolveBibPath('exported_items.bib');
+                        if (exportedPath) {
+                            const exported = await window.TechneBibtexParser.loadFromFile(exportedPath);
+                            if (exported?.length) {
+                                window.TechneBibtexParser.addEntries(exported);
+                                console.log(`[${PLUGIN_ID}] Added ${exported.length} entries from ${exportedPath}`);
+                            }
+                        }
+
+                        if (window.bibEntries?.length) {
+                            console.log(`[${PLUGIN_ID}] Bibliography loaded: ${window.bibEntries.length} entries`);
+                            host.emit('bibliography:loaded', { count: window.bibEntries.length });
+                        }
                     } catch (err) {
                         console.warn(`[${PLUGIN_ID}] Failed to load bibliography:`, err);
                     }
