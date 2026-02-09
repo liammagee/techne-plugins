@@ -8,7 +8,7 @@
 # - CSS and other JS files edited directly here
 #
 # Targets:
-# - my-website/plugins/techne-presentations/
+# - machinespirits-website/plugins/techne-presentations/
 # - hegel-pedagogy-ai/plugins/techne-presentations/
 
 set -e
@@ -17,7 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEV_DIR="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
 
 # Target directories
-MY_WEBSITE="$DEV_DIR/my-website/plugins/techne-presentations"
+MY_WEBSITE="$DEV_DIR/machinespirits-website/plugins/techne-presentations"
 HEGEL_PLUGINS="$DEV_DIR/hegel-pedagogy-ai/plugins/techne-presentations"
 
 echo "=== Techne Presentations Plugin Sync ==="
@@ -51,7 +51,7 @@ for file in "${FILES_TO_SYNC[@]}"; do
 
         if [ -d "$MY_WEBSITE" ]; then
             cp "$SCRIPT_DIR/$file" "$MY_WEBSITE/$file"
-            echo "      -> my-website"
+            echo "      -> machinespirits-website"
         fi
 
         if [ -d "$HEGEL_PLUGINS" ]; then
