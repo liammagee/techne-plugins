@@ -1,19 +1,30 @@
 ## Plugin Development Workflow
 
-This repository is a repository of plugins for repositories in `~/Dev/my-website` (desktop / mobile web app) and `~/Dev/hegel-pedagogy-ai` (Electron app). Changes here should be synced to those repositories as well.
+This repository is the **source of truth** for all plugin code. It is consumed as an npm package (`@machinespirits/techne-plugins`) by:
+- `~/Dev/machinespirits-website` (web LMS)
+- `~/Dev/hegel-pedagogy-ai` (Electron app)
 
-**IMPORTANT: `techne-plugins` is the source of truth for all plugin code.**
+### Syncing to consumers
 
-When making changes to plugins:
-1. **Always make changes in `~/Dev/techne-plugins` first**
-2. Then sync those changes to the consuming repos:
-   - `~/Dev/my-website`
-   - `~/Dev/hegel-pedagogy-ai`
+Both consumers have `@machinespirits/techne-plugins` as a `file:../techne-plugins` dependency. Running `npm install` or `npm run sync-plugins` in either consumer copies plugin files into their `plugins/` directory.
 
-Plugins must be synced across all three repositories:
-- `~/Dev/techne-plugins` (source of truth)
-- `~/Dev/my-website`
-- `~/Dev/hegel-pedagogy-ai`
+```bash
+# After making changes here, sync to consumers:
+cd ~/Dev/machinespirits-website && npm run sync-plugins
+cd ~/Dev/hegel-pedagogy-ai && npm run sync-plugins
+```
 
-If you've made plugin changes in hegel-pedagogy-ai or my-website, copy them back to techne-plugins and then sync to the other repos to maintain consistency.
+### Package structure
+
+- `scripts/sync-to-consumer.js` — the sync script, exposed as `bin: sync-techne-plugins`
+- `scripts/extract-backdrop-from-website.js` — reverse-sync for backdrop layers from the website
+- `files` in package.json controls what gets published/installed
+
+### Backdrop reverse sync
+
+Visual layer definitions are authored in `machinespirits-website/index.html` and extracted into `plugins/techne-backdrop/`:
+
+```bash
+node scripts/extract-backdrop-from-website.js ~/Dev/machinespirits-website
+```
 

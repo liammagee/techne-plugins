@@ -1,9 +1,20 @@
 {
-  "name": "techne-plugins",
-  "version": "0.1.0",
+  "name": "@machinespirits/techne-plugins",
+  "version": "0.2.0",
   "description": "A lightweight plugin system and collection of UI plugins for web applications",
   "main": "core/techne-plugin-system.js",
+  "files": [
+    "core/",
+    "plugins/techne-*/",
+    "themes/",
+    "scripts/sync-to-consumer.js",
+    "scripts/extract-backdrop-from-website.js"
+  ],
+  "bin": {
+    "sync-techne-plugins": "scripts/sync-to-consumer.js"
+  },
   "scripts": {
+    "prepublishOnly": "cd plugins/techne-presentations && npm run build",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "jest --testPathPattern=tests/unit",
     "test:integration": "jest --testPathPattern=tests/integration",
