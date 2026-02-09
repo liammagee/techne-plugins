@@ -55,12 +55,12 @@ global.loadPluginSystem = () => {
   // Reset any existing state
   delete window.TechnePlugins;
 
-  // Read and evaluate the plugin system code
-  const fs = require('fs');
+  // Use jest.isolateModules + require() for coverage instrumentation
   const path = require('path');
   const systemPath = path.resolve(__dirname, '../../core/techne-plugin-system.js');
-  const code = fs.readFileSync(systemPath, 'utf-8');
-  eval(code);
+  jest.isolateModules(() => {
+    require(systemPath);
+  });
 
   return window.TechnePlugins;
 };
@@ -86,4 +86,20 @@ global.waitFor = async (condition, timeout = 5000, interval = 50) => {
     await new Promise(resolve => setTimeout(resolve, interval));
   }
   throw new Error('Timeout waiting for condition');
+};
+
+// Helper to load a plugin source file for coverage instrumentation.
+// Uses jest.isolateModules + require() so Jest's transform pipeline
+// instruments the code and each call gets a fresh execution.
+// The { windowKey } option copies module.exports onto window[key].
+global.loadPluginFile = (relativePath, opts = {}) => {
+  const path = require('path');
+  const filePath = path.resolve(__dirname, '../..', relativePath);
+  let result;
+  jest.isolateModules(() => {
+    result = require(filePath);
+  });
+  if (opts.windowKey && result) {
+    window[opts.windowKey] = result;
+  }
 };
