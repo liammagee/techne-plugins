@@ -1,7 +1,8 @@
 /* Techne Theme Manager Plugin
-   - Unified design tokens, theme switching, and (future) theme editing.
+   - Unified design tokens, theme switching, and theme editing.
    - Defines canonical --techne-* CSS custom properties.
    - Each host app provides an adapter CSS that maps --techne-* → app-specific vars.
+   - Bridge scripts sync plugin state to each app's native theming mechanism.
 */
 
 (function () {
@@ -13,10 +14,16 @@
 
     const resolve = (rel) => new URL(rel, baseUrl).toString();
 
+    // Detect host app by probing for adapter CSS
+    const HOST_ADAPTERS = [
+        { path: 'styles/techne-theme-adapter.css', bridge: 'bridges/website-bridge.js' },
+        { path: 'css/techne-theme-adapter.css',    bridge: 'bridges/nightowl-bridge.js' }
+    ];
+
     window.TechnePlugins?.register?.({
         id: 'techne-theme-manager',
         name: 'Techne Theme Manager',
-        version: '0.1.0',
+        version: '0.2.0',
         settings: {
             activeTheme: {
                 type: 'select',
@@ -36,29 +43,30 @@
             }
         },
         async init(host) {
+            // 1. Load canonical tokens
             await host.loadCSS(resolve('techne-tokens.css'));
 
-            // Load host-provided adapter CSS (maps --techne-* → app vars).
-            // Convention: styles/techne-theme-adapter.css (website) or
-            //             css/techne-theme-adapter.css (NightOwl).
-            const adapterPaths = [
-                'styles/techne-theme-adapter.css',
-                'css/techne-theme-adapter.css'
-            ];
-            for (const path of adapterPaths) {
+            // 2. Load host-provided adapter CSS + bridge script
+            for (const adapter of HOST_ADAPTERS) {
                 try {
-                    const resp = await fetch(path, { method: 'HEAD' });
+                    const resp = await fetch(adapter.path, { method: 'HEAD' });
                     if (resp.ok) {
-                        await host.loadCSS(path);
+                        await host.loadCSS(adapter.path);
+                        await host.loadScript(resolve(adapter.bridge));
                         break;
                     }
                 } catch (_) { /* not found, try next */ }
             }
 
+            // 3. Load theme definitions + core manager
             await host.loadScript(resolve('themes.js'));
             await host.loadScript(resolve('theme-manager.js'));
 
-            // Initialize the manager with the host API
+            // 4. Load theme editor
+            await host.loadScript(resolve('theme-editor.js'));
+            await host.loadScript(resolve('theme-editor-ui.js'));
+
+            // 5. Initialize the manager with the host API
             if (window.techneThemeManager) {
                 window.techneThemeManager._init(host);
             }
