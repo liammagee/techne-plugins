@@ -78,6 +78,211 @@
         return processed;
     };
 
+    // === Footnote Processing ===
+    // Supports standard Markdown footnote syntax:
+    //   Inline reference: [^id]
+    //   Definition: [^id]: Footnote content here
+    //   Multi-line definitions (indented continuation lines)
+    //   Pandoc inline footnotes: ^[content here]
+    //   Prose inline footnotes: [^content with spaces] (no matching definition)
+
+    /**
+     * Extract footnote definitions from markdown source.
+     * Returns { body, footnotes } where body has definitions removed
+     * and footnotes is a Map<id, htmlContent>.
+     */
+    const extractFootnoteDefinitions = (markdown) => {
+        const footnotes = new Map();
+        // Match [^id]: content, including continuation lines (indented by 2+ spaces or tab)
+        const defPattern = /^\[\^([^\]]+)\]:\s*([\s\S]*?)(?=\n(?:\[\^[^\]]+\]:|\S)|\n*$)/gm;
+
+        // Two-pass: first collect multi-line definitions properly
+        const lines = markdown.split('\n');
+        let body = '';
+        let currentId = null;
+        let currentContent = '';
+        let skipLines = false;
+
+        const flushFootnote = () => {
+            if (currentId !== null) {
+                footnotes.set(currentId, currentContent.trim());
+                currentId = null;
+                currentContent = '';
+            }
+        };
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const defMatch = line.match(/^\[\^([^\]]+)\]:\s*(.*)/);
+
+            if (defMatch) {
+                flushFootnote();
+                currentId = defMatch[1];
+                currentContent = defMatch[2];
+                skipLines = true;
+            } else if (skipLines && (line.startsWith('    ') || line.startsWith('\t') || line.trim() === '')) {
+                // Continuation of current footnote definition
+                if (currentId !== null) {
+                    currentContent += '\n' + (line.startsWith('    ') ? line.slice(4) : line.startsWith('\t') ? line.slice(1) : line);
+                }
+            } else {
+                flushFootnote();
+                skipLines = false;
+                body += line + '\n';
+            }
+        }
+        flushFootnote();
+
+        return { body, footnotes };
+    };
+
+    /**
+     * Convert inline footnotes to reference-style footnotes.
+     * Handles two patterns:
+     *   1. Pandoc-style: ^[content here] → [^_fn_N] with auto-generated definition
+     *   2. Prose-in-brackets: [^content with spaces] (no matching definition) → [^_fn_N]
+     * Must be called after extractFootnoteDefinitions so the footnotes map exists.
+     */
+    const extractInlineFootnotes = (markdown, footnotes) => {
+        let counter = footnotes.size;
+
+        // 1. Pandoc-style inline footnotes: ^[content]
+        let processed = markdown.replace(/\^\[([^\]]+)\]/g, (_match, content) => {
+            counter++;
+            const autoId = `_fn_${counter}`;
+            footnotes.set(autoId, content.trim());
+            return `[^${autoId}]`;
+        });
+
+        // 2. Prose-in-brackets: [^content with spaces] where no definition exists
+        processed = processed.replace(/\[\^([^\]]+)\]/g, (match, id) => {
+            // Skip if a definition already exists (normal reference footnote)
+            if (footnotes.has(id)) return match;
+            // Only treat as inline footnote if id contains spaces (prose, not a key)
+            if (!id.includes(' ')) return match;
+            counter++;
+            const autoId = `_fn_${counter}`;
+            footnotes.set(autoId, id.trim());
+            return `[^${autoId}]`;
+        });
+
+        return processed;
+    };
+
+    /**
+     * Replace [^id] inline references with superscript links and
+     * append a footnotes section at the end.
+     */
+    const renderFootnotes = (html, footnotes, markedApi) => {
+        if (!footnotes || footnotes.size === 0) return html;
+
+        // Track which footnotes are actually referenced and assign numbers
+        const referencedOrder = [];
+        const refNumberMap = new Map();
+
+        // Replace inline [^id] with superscript links
+        // In the HTML, marked may have rendered [^id] as literal text or inside <p> tags
+        const processed = html.replace(/\[\^([^\]]+)\]/g, (match, id) => {
+            if (!footnotes.has(id)) return match;
+
+            if (!refNumberMap.has(id)) {
+                referencedOrder.push(id);
+                refNumberMap.set(id, referencedOrder.length);
+            }
+            const num = refNumberMap.get(id);
+            return `<sup class="footnote-ref"><a href="#fn-${id}" id="fnref-${id}" title="Footnote ${num}">${num}</a></sup>`;
+        });
+
+        if (referencedOrder.length === 0) return html;
+
+        // Build footnotes section
+        const items = referencedOrder.map(id => {
+            const num = refNumberMap.get(id);
+            let content = footnotes.get(id) || '';
+
+            // Parse footnote content through marked for inline formatting
+            if (markedApi?.parseInline) {
+                content = markedApi.parseInline(content);
+            } else if (markedApi?.parse) {
+                // Fallback: full parse, strip wrapping <p> tags
+                content = markedApi.parse(content).replace(/^<p>([\s\S]*)<\/p>\s*$/, '$1');
+            }
+
+            return `<li id="fn-${id}" class="footnote-item"><span class="footnote-content">${content}</span> <a href="#fnref-${id}" class="footnote-backref" title="Back to reference ${num}">↩</a></li>`;
+        });
+
+        const footnotesHtml = `
+<section class="footnotes-section" role="doc-endnotes">
+    <hr class="footnotes-separator">
+    <ol class="footnotes-list">
+        ${items.join('\n        ')}
+    </ol>
+</section>`;
+
+        return processed + footnotesHtml;
+    };
+
+    /**
+     * CSS for footnote rendering
+     */
+    const getFootnoteCSS = () => `
+/* Footnote Styles */
+.footnote-ref a {
+    color: var(--primary, #6366f1);
+    text-decoration: none;
+    font-size: 0.75em;
+    vertical-align: super;
+    line-height: 0;
+    padding: 0 1px;
+}
+
+.footnote-ref a:hover {
+    text-decoration: underline;
+}
+
+.footnotes-section {
+    margin-top: 2em;
+    font-size: 0.9em;
+    color: var(--text-secondary, #475569);
+}
+
+.footnotes-separator {
+    border: none;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    margin-bottom: 1em;
+}
+
+.footnotes-list {
+    padding-left: 1.5em;
+    margin: 0;
+}
+
+.footnote-item {
+    margin-bottom: 0.5em;
+    line-height: 1.5;
+}
+
+.footnote-backref {
+    color: var(--primary, #6366f1);
+    text-decoration: none;
+    font-size: 0.85em;
+    margin-left: 0.25em;
+}
+
+.footnote-backref:hover {
+    text-decoration: underline;
+}
+
+/* Dark mode */
+body.dark-mode .footnotes-section {
+    color: var(--text-secondary, #a1a1aa);
+}
+
+body.dark-mode .footnotes-separator {
+    border-top-color: var(--border-color, #3f3f46);
+}
+`;
+
     // Post-process HTML to add custom classes to lists
     const addListClasses = (html) => {
         return html
@@ -175,16 +380,25 @@
 
         const processed = processMarkdownContent(body, options);
 
+        // Extract footnote definitions before marked parsing
+        const { body: bodyWithoutFootnotes, footnotes } = extractFootnoteDefinitions(processed);
+
+        // Convert inline footnotes (^[content] and [^prose]) to reference-style
+        const bodyWithInlineFootnotes = extractInlineFootnotes(bodyWithoutFootnotes, footnotes);
+
         // Configure marked once, update baseDir per render
         _currentBaseDir = options.baseDir || '';
         if (markedApi.use) {
             setupMarkedOnce(markedApi);
         }
 
-        let html = markedApi.parse(processed);
+        let html = markedApi.parse(bodyWithInlineFootnotes);
 
         // Add custom classes to lists (post-processing since marked v13+ tokens don't have body)
         html = addListClasses(html);
+
+        // Render footnote references and section
+        html = renderFootnotes(html, footnotes, markedApi);
 
         if (typeof options.processInternalLinksHTML === 'function') {
             html = await options.processInternalLinksHTML(html);
@@ -254,7 +468,12 @@
 
     window.TechneMarkdownRenderer = {
         renderToHtml,
-        renderPreview
+        renderPreview,
+        getFootnoteCSS,
+        // Exposed for testing
+        _extractFootnoteDefinitions: extractFootnoteDefinitions,
+        _extractInlineFootnotes: extractInlineFootnotes,
+        _renderFootnotes: renderFootnotes
     };
 })();
 
