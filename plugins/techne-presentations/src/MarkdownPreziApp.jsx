@@ -2291,7 +2291,7 @@ Note: You can press 'N' to toggle these speaker notes on/off during presentation
           <select
             value={layoutType}
             onChange={(e) => setLayoutType(e.target.value)}
-            className="px-3 py-2 text-gray-900 rounded-lg border border-gray-300 focus:border-green-500 outline-none shadow-lg"
+            className="px-3 py-2 text-gray-900 rounded-lg border border-gray-300 focus:border-[#E63946] outline-none shadow-lg"
             style={{backgroundColor: '#fefdfb'}}
           >
             <option value="spiral">Spiral</option>

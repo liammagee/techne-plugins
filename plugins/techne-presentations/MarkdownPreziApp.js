@@ -2497,7 +2497,7 @@ var MarkdownPreziApp = function MarkdownPreziApp() {
     onChange: function onChange(e) {
       return setLayoutType(e.target.value);
     },
-    className: "px-3 py-2 text-gray-900 rounded-lg border border-gray-300 focus:border-green-500 outline-none shadow-lg",
+    className: "px-3 py-2 text-gray-900 rounded-lg border border-gray-300 focus:border-[#E63946] outline-none shadow-lg",
     style: {
       backgroundColor: '#fefdfb'
     }
