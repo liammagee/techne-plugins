@@ -18,7 +18,7 @@
 
 /* Slide container and content */
 .slide {
-    background: var(--slide-bg) !important;
+    background-color: var(--slide-bg) !important;
     color: var(--text-color) !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
@@ -51,7 +51,7 @@
 #presentation-root div.absolute.slide,
 .absolute.slide,
 div.absolute.slide {
-    background: var(--slide-bg) !important;
+    background-color: var(--slide-bg) !important;
     color: var(--text-color) !important;
     border: 1px solid var(--border-color) !important;
     width: var(--presentation-slide-width) !important;

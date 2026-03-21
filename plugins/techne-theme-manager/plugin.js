@@ -34,7 +34,13 @@
                     { value: 'techne-red-light', label: 'Red Light' },
                     { value: 'techne-red-dark', label: 'Red Dark' },
                     { value: 'techne-orange-light', label: 'Orange Light' },
-                    { value: 'techne-orange-dark', label: 'Orange Dark' }
+                    { value: 'techne-orange-dark', label: 'Orange Dark' },
+                    { value: 'solarized-light', label: 'Solarized Light' },
+                    { value: 'solarized-dark', label: 'Solarized Dark' },
+                    { value: 'nord', label: 'Nord' },
+                    { value: 'dracula', label: 'Dracula' },
+                    { value: 'monokai', label: 'Monokai' },
+                    { value: 'sepia', label: 'Sepia' }
                 ],
                 default: 'light'
             },
