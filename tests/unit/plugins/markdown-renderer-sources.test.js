@@ -393,6 +393,53 @@ describe('Markdown Renderer Plugin Sources', () => {
       });
       expect(el.innerHTML).toBeTruthy();
     });
+
+    test('renderToHtml() should auto-embed YouTube watch URL', async () => {
+      window.marked.parse.mockReturnValue('<p>https://www.youtube.com/watch?v=dQw4w9WgXcQ</p>');
+      const result = await window.TechneMarkdownRenderer.renderToHtml('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+      expect(result).toContain('iframe');
+      expect(result).toContain('youtube.com/embed/dQw4w9WgXcQ');
+      expect(result).toContain('slide-video-wrapper');
+    });
+
+    test('renderToHtml() should auto-embed YouTube short URL', async () => {
+      window.marked.parse.mockReturnValue('<p>https://youtu.be/dQw4w9WgXcQ</p>');
+      const result = await window.TechneMarkdownRenderer.renderToHtml('https://youtu.be/dQw4w9WgXcQ');
+      expect(result).toContain('youtube.com/embed/dQw4w9WgXcQ');
+    });
+
+    test('renderToHtml() should auto-embed YouTube link wrapped in anchor', async () => {
+      window.marked.parse.mockReturnValue('<p><a href="https://www.youtube.com/watch?v=abc123">https://www.youtube.com/watch?v=abc123</a></p>');
+      const result = await window.TechneMarkdownRenderer.renderToHtml('https://www.youtube.com/watch?v=abc123');
+      expect(result).toContain('youtube.com/embed/abc123');
+    });
+
+    test('renderToHtml() should NOT embed YouTube URL inline with other text', async () => {
+      window.marked.parse.mockReturnValue('<p>Check out https://www.youtube.com/watch?v=abc123 for more info</p>');
+      const result = await window.TechneMarkdownRenderer.renderToHtml('Check out https://www.youtube.com/watch?v=abc123 for more info');
+      expect(result).not.toContain('iframe');
+    });
+
+    test('renderToHtml() should auto-embed Zoom meeting URL', async () => {
+      window.marked.parse.mockReturnValue('<p>https://illinois.zoom.us/j/86072392676?pwd=abc123</p>');
+      const result = await window.TechneMarkdownRenderer.renderToHtml('https://illinois.zoom.us/j/86072392676?pwd=abc123');
+      expect(result).toContain('iframe');
+      expect(result).toContain('zoom.us/j/86072392676');
+      expect(result).toContain('slide-video-wrapper');
+    });
+
+    test('renderToHtml() should auto-embed Zoom recording URL', async () => {
+      window.marked.parse.mockReturnValue('<p>https://zoom.us/rec/share/abc123token</p>');
+      const result = await window.TechneMarkdownRenderer.renderToHtml('https://zoom.us/rec/share/abc123token');
+      expect(result).toContain('iframe');
+      expect(result).toContain('zoom.us/rec/share/abc123token');
+    });
+
+    test('renderToHtml() should NOT embed Zoom URL inline with other text', async () => {
+      window.marked.parse.mockReturnValue('<p>Join at https://zoom.us/j/123 now</p>');
+      const result = await window.TechneMarkdownRenderer.renderToHtml('Join at https://zoom.us/j/123 now');
+      expect(result).not.toContain('iframe');
+    });
   });
 
   // =========================================

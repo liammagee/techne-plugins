@@ -31,7 +31,10 @@ module.exports = {
     '!plugins/techne-ai-tutor/**',
     '!plugins/techne-presentations/MarkdownPreziApp.js',
     '!plugins/techne-backdrop/fauna-overlay.js',
-    '!plugins/techne-backdrop/fauna-overlay-extended.js'
+    '!plugins/techne-backdrop/fauna-overlay-extended.js',
+    // Theme editor UI and host-specific bridges require full DOM/Electron environment
+    '!plugins/techne-theme-manager/theme-editor-ui.js',
+    '!plugins/techne-theme-manager/bridges/**'
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
